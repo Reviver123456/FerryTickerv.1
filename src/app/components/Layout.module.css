@@ -1,65 +1,164 @@
-@reference "../globals.css";
-
 .shell {
-  @apply min-h-screen bg-gray-50;
+  min-height: 100vh;
+  background: #f8fafc;
 }
 
 .desktopNav {
-  @apply sticky top-0 z-50 hidden border-b border-gray-100 bg-white shadow-sm md:block;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .desktopInner {
-  @apply mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8;
+  display: flex;
+  height: 4rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
 }
 
 .brand {
-  @apply flex items-center gap-2;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .brandIcon {
-  @apply flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0EA5E9] to-[#2563EB];
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  box-shadow: 0 18px 32px -18px rgba(37, 99, 235, 0.45);
 }
 
 .brandTitle {
-  @apply bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] bg-clip-text text-xl font-semibold text-transparent;
+  background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .desktopMenu {
-  @apply flex items-center gap-8;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
 }
 
 .desktopLink {
-  @apply text-sm text-gray-600 transition-colors hover:text-gray-900;
+  color: #475569;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
 }
 
 .desktopLinkActive {
-  @apply text-[#0EA5E9];
+  color: #0ea5e9;
 }
 
 .desktopButton {
-  @apply rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-4 py-2 text-sm text-white transition-shadow hover:shadow-lg;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 0.875rem;
+  box-shadow: 0 20px 36px -24px rgba(37, 99, 235, 0.42);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .main {
-  @apply pb-20 md:pb-8;
+  padding-bottom: 5rem;
 }
 
 .mobileNav {
-  @apply fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white md:hidden;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  border-top: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.98);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .mobileGrid {
-  @apply grid grid-cols-5 gap-1 px-2 py-2;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.5rem;
 }
 
 .mobileLink {
-  @apply flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-gray-600 transition-colors;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 1rem;
+  color: #64748b;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .mobileLinkActive {
-  @apply bg-gradient-to-br from-blue-50 to-blue-100 text-[#0EA5E9];
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #0ea5e9;
 }
 
 .mobileLabel {
-  @apply text-xs;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.desktopLink:hover {
+  color: #0f172a;
+}
+
+.desktopButton:hover {
+  box-shadow: 0 26px 54px -28px rgba(37, 99, 235, 0.48);
+  transform: translateY(-1px);
+}
+
+.mobileLink:hover {
+  color: #0f172a;
+}
+
+@media (min-width: 640px) {
+  .desktopInner {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .desktopNav {
+    display: block;
+  }
+
+  .main {
+    padding-bottom: 2rem;
+  }
+
+  .mobileNav {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktopInner {
+    padding: 0 2rem;
+  }
 }

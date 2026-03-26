@@ -1,21 +1,28 @@
-@layer components {
-  .booking-page {
-    @apply min-h-screen bg-gradient-to-b from-white to-gray-50;
-  }
+.booking-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
 
+.booking-page__container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1rem 7rem;
+}
+
+.booking-page__container--sm {
+  max-width: 42rem;
+}
+
+.booking-page__container--md {
+  max-width: 56rem;
+}
+
+.booking-page__container--lg {
+  max-width: 80rem;
+}
+
+@media (min-width: 768px) {
   .booking-page__container {
-    @apply mx-auto px-4 py-8;
-  }
-
-  .booking-page__container--sm {
-    @apply max-w-2xl;
-  }
-
-  .booking-page__container--md {
-    @apply max-w-4xl;
-  }
-
-  .booking-page__container--lg {
-    @apply max-w-7xl;
+    padding: 2.5rem 1.5rem 3rem;
   }
 }
