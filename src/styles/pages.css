@@ -1,0 +1,21 @@
+@layer components {
+  .booking-page {
+    @apply min-h-screen bg-gradient-to-b from-white to-gray-50;
+  }
+
+  .booking-page__container {
+    @apply mx-auto px-4 py-8;
+  }
+
+  .booking-page__container--sm {
+    @apply max-w-2xl;
+  }
+
+  .booking-page__container--md {
+    @apply max-w-4xl;
+  }
+
+  .booking-page__container--lg {
+    @apply max-w-7xl;
+  }
+}
