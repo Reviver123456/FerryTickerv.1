@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { getTicketQrImageUrl } from "@/lib/ferry";
@@ -28,6 +28,7 @@ export function MyTickets() {
   const navigate = useNavigate();
   const { booking, setLastLookup } = useAppContext();
   const [activeTab, setActiveTab] = useState<TicketTab>("unused");
+  const hasResolvedInitialTab = useRef(false);
 
   const bookingCards = useMemo(() => getTicketViewBookings(booking), [booking]);
   const ticketCards = useMemo<TicketCardItem[]>(
@@ -86,15 +87,16 @@ export function MyTickets() {
   const usedTickets = useMemo(() => ticketCards.filter((record) => record.tab === "used"), [ticketCards]);
 
   useEffect(() => {
-    if (activeTab === "unused" && unusedTickets.length === 0 && usedTickets.length > 0) {
-      setActiveTab("used");
+    if (hasResolvedInitialTab.current) {
       return;
     }
 
-    if (activeTab === "used" && usedTickets.length === 0 && unusedTickets.length > 0) {
-      setActiveTab("unused");
+    if (unusedTickets.length === 0 && usedTickets.length > 0) {
+      setActiveTab("used");
     }
-  }, [activeTab, unusedTickets.length, usedTickets.length]);
+
+    hasResolvedInitialTab.current = true;
+  }, [unusedTickets.length, usedTickets.length]);
 
   const tickets = activeTab === "unused" ? unusedTickets : usedTickets;
 
