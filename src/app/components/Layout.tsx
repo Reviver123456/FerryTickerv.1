@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import clsx from "clsx";
 import { Bell, FileText, Home, Ship, Ticket, User } from "lucide-react";
 import { Link, useLocation } from "@/lib/router";
+import { useAppContext } from "@/app/providers/AppProvider";
 import styles from "./Layout.module.css";
 
 type LayoutProps = {
@@ -17,27 +18,6 @@ type NavItem = {
   variant?: "button";
 };
 
-const desktopItems: NavItem[] = [
-  { href: "/search", label: "จองตั๋ว", paths: ["/search"] },
-  { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"] },
-  { href: "/promotions", label: "ข่าวสาร", paths: ["/promotions"] },
-  { href: "/help", label: "ช่วยเหลือ", paths: ["/help"] },
-  { href: "/profile", label: "เข้าสู่ระบบ", paths: ["/profile"], variant: "button" },
-];
-
-const mobileItems = [
-  { href: "/", label: "หน้าแรก", paths: ["/"], icon: Home },
-  {
-    href: "/search",
-    label: "จองตั๋ว",
-    paths: ["/search", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"],
-    icon: Ticket,
-  },
-  { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"], icon: FileText },
-  { href: "/promotions", label: "แจ้งเตือน", paths: ["/promotions"], icon: Bell },
-  { href: "/profile", label: "โปรไฟล์", paths: ["/profile"], icon: User },
-];
-
 function isActive(pathname: string, paths: string[]) {
   return paths.some((path) => {
     if (path === "/") {
@@ -50,6 +30,36 @@ function isActive(pathname: string, paths: string[]) {
 
 export function Layout({ children }: LayoutProps) {
   const { pathname } = useLocation();
+  const { authUser } = useAppContext();
+  const desktopItems: NavItem[] = [
+    { href: "/search", label: "จองตั๋ว", paths: ["/search", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"] },
+    { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"] },
+    { href: "/promotions", label: "ข่าวสาร", paths: ["/promotions"] },
+    { href: "/help", label: "ช่วยเหลือ", paths: ["/help"] },
+    ...(authUser
+      ? [{ href: "/profile", label: "โปรไฟล์", paths: ["/profile"], variant: "button" as const }]
+      : [
+          { href: "/register", label: "สมัครสมาชิก", paths: ["/register"] },
+          { href: "/login", label: "เข้าสู่ระบบ", paths: ["/login"], variant: "button" as const },
+        ]),
+  ];
+  const mobileItems = [
+    { href: "/", label: "หน้าแรก", paths: ["/"], icon: Home },
+    {
+      href: "/search",
+      label: "จองตั๋ว",
+      paths: ["/search", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"],
+      icon: Ticket,
+    },
+    { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"], icon: FileText },
+    { href: "/promotions", label: "แจ้งเตือน", paths: ["/promotions"], icon: Bell },
+    {
+      href: authUser ? "/profile" : "/login",
+      label: authUser ? "โปรไฟล์" : "เข้าสู่ระบบ",
+      paths: ["/profile", "/login", "/register"],
+      icon: User,
+    },
+  ];
 
   return (
     <div className={styles.shell}>

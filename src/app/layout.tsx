@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Layout } from "./components/Layout";
+import { AppProvider } from "./providers/AppProvider";
 
 export const metadata: Metadata = {
   title: "Ferry Ticket",
@@ -16,7 +17,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="th">
       <body>
-        <Layout>{children}</Layout>
+        <AppProvider>
+          <Layout>{children}</Layout>
+        </AppProvider>
       </body>
     </html>
   );
