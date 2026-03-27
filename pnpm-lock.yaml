@@ -11,6 +11,9 @@ importers:
       clsx:
         specifier: 2.1.1
         version: 2.1.1
+      litepicker:
+        specifier: ^2.0.12
+        version: 2.0.12
       lucide-react:
         specifier: 0.487.0
         version: 0.487.0(react@18.3.1)
@@ -142,6 +145,9 @@ packages:
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
+
+  litepicker@2.0.12:
+    resolution: {integrity: sha512-1N0sZJca/eALvS1hbJsVqKXwJAmp0BsJn73kZKWGGLjZkvjKr7HXGPV+/shu60aEY/JXoOg2XUmo7hbdIOsFpQ==}
 
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
@@ -294,6 +300,8 @@ snapshots:
   graceful-fs@4.2.11: {}
 
   js-tokens@4.0.0: {}
+
+  litepicker@2.0.12: {}
 
   loose-envify@1.4.0:
     dependencies:

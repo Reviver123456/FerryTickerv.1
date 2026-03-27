@@ -1,17 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, ChevronRight, Clock, HelpCircle, Users } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { fetchSchedules, formatThaiDate, getTodayDateKey } from "@/lib/ferry";
 import type { ScheduleSummary } from "@/lib/app-types";
+import type Litepicker from "litepicker";
 
 export function Home() {
   const navigate = useNavigate();
   const { booking, updateSearch } = useAppContext();
+  const datePickerWrapRef = useRef<HTMLDivElement | null>(null);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
+  const pickerRef = useRef<Litepicker | null>(null);
+  const [travelDate, setTravelDate] = useState(booking.search.travelDate || getTodayDateKey());
   const [passengers, setPassengers] = useState(booking.search.passengers);
   const [todaySchedules, setTodaySchedules] = useState<ScheduleSummary[]>([]);
+
+  useEffect(() => {
+    setTravelDate(booking.search.travelDate || getTodayDateKey());
+  }, [booking.search.travelDate]);
 
   useEffect(() => {
     let ignore = false;
@@ -36,6 +45,63 @@ export function Home() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function setupDatePicker() {
+      if (!dateInputRef.current) {
+        return;
+      }
+
+      const { Litepicker } = await import("litepicker");
+
+      if (ignore || !dateInputRef.current) {
+        return;
+      }
+
+      const picker = new Litepicker({
+        element: dateInputRef.current,
+        parentEl: datePickerWrapRef.current,
+        format: "DD MMMM YYYY",
+        lang: "th-TH",
+        singleMode: true,
+        autoApply: true,
+        mobileFriendly: true,
+        minDate: getTodayDateKey(),
+        startDate: travelDate || getTodayDateKey(),
+        setup: (instance) => {
+          instance.on("selected", (date: { format: (pattern: string) => string } | null) => {
+            if (!date) {
+              return;
+            }
+
+            const nextValue = date.format("YYYY-MM-DD");
+            setTravelDate(nextValue);
+            updateSearch({ travelDate: nextValue });
+          });
+        },
+      });
+
+      pickerRef.current = picker;
+    }
+
+    void setupDatePicker();
+
+    return () => {
+      ignore = true;
+      pickerRef.current?.destroy();
+      pickerRef.current = null;
+    };
+  }, [updateSearch]);
+
+  useEffect(() => {
+    if (!pickerRef.current || !travelDate) {
+      return;
+    }
+
+    pickerRef.current.setDate(travelDate);
+  }, [travelDate]);
 
   const promotions = [
     { title: "ชำระง่ายผ่าน PromptPay QR", subtitle: "Flow การชำระเงินจริงเชื่อมกับ API แล้ว", image: "QR" },
@@ -75,9 +141,20 @@ export function Home() {
                 วันที่เดินทาง
                 <span className="field-label__required">จำเป็น</span>
               </label>
-              <div className="flex items-center gap-3 p-4 rounded-2xl border-2 border-gray-200">
-                <Calendar className="w-5 h-5 text-[#0EA5E9]" />
-                <span className="text-gray-900">{formatThaiDate(booking.search.travelDate || getTodayDateKey())}</span>
+              <div
+                ref={datePickerWrapRef}
+                onClick={() => dateInputRef.current?.focus()}
+                className="home-date-picker flex items-center gap-3 p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-200 transition-colors cursor-pointer"
+              >
+                <Calendar className="w-5 h-5 text-[#0EA5E9] flex-shrink-0" />
+                <input
+                  ref={dateInputRef}
+                  type="text"
+                  readOnly
+                  defaultValue={formatThaiDate(travelDate || getTodayDateKey())}
+                  className="w-full border-0 bg-transparent text-gray-900 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 cursor-pointer shadow-none"
+                  style={{ border: "none" }}
+                />
               </div>
             </div>
 
@@ -109,7 +186,7 @@ export function Home() {
 
             <button
               onClick={() => {
-                updateSearch({ passengers });
+                updateSearch({ passengers, travelDate });
                 navigate("/search");
               }}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
