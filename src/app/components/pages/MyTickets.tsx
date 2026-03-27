@@ -107,6 +107,7 @@ export function MyTickets() {
 
         <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 mb-6 inline-flex">
           <button
+            type="button"
             onClick={() => setActiveTab("unused")}
             className={`px-6 py-3 rounded-xl transition-all ${
               activeTab === "unused"
@@ -117,6 +118,7 @@ export function MyTickets() {
             ยังไม่ใช้งาน
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab("used")}
             className={`px-6 py-3 rounded-xl transition-all ${
               activeTab === "used"
