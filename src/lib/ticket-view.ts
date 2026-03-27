@@ -72,9 +72,44 @@ function createSyntheticBookingRecord(booking: BookingState): BookingHistoryReco
   };
 }
 
+function createSyntheticCurrentBookingRecord(booking: BookingState): BookingHistoryRecord | null {
+  if (!booking.draft?.bookingNo) {
+    return null;
+  }
+
+  const existing = booking.recentBookings.some((record) => record.bookingNo === booking.draft?.bookingNo);
+
+  if (existing) {
+    return null;
+  }
+
+  const lookupMatchesCurrent = booking.lastLookup?.bookingNo === booking.draft.bookingNo;
+  const lookupTickets = lookupMatchesCurrent ? booking.lastLookup?.tickets ?? [] : [];
+
+  return {
+    bookingNo: booking.draft.bookingNo,
+    contactEmail: booking.contact.email,
+    contactName: booking.contact.fullName,
+    contactPhone: booking.contact.phone,
+    scheduleDate: lookupTickets[0]?.travelDate || booking.selectedSchedule?.dateLabel || "-",
+    scheduleTime: lookupTickets[0]?.travelTime || booking.selectedSchedule?.timeLabel || "-",
+    passengers:
+      lookupTickets.length ||
+      booking.selectedTickets.reduce((sum, item) => sum + item.quantity, 0) ||
+      booking.passengers.length,
+    totalAmount: booking.selectedTickets.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
+    paymentMethod: booking.payment?.method,
+    paymentRef: booking.payment?.paymentRef,
+    status: booking.payment?.status || (booking.payment ? "pending_payment" : "draft"),
+    tickets: lookupTickets,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function getTicketViewBookings(booking: BookingState): TicketViewBooking[] {
+  const current = createSyntheticCurrentBookingRecord(booking);
   const synthetic = createSyntheticBookingRecord(booking);
-  const merged = synthetic ? [synthetic, ...booking.recentBookings] : [...booking.recentBookings];
+  const merged = [current, synthetic, ...booking.recentBookings].filter(Boolean) as BookingHistoryRecord[];
   const deduped = merged.filter(
     (record, index) => merged.findIndex((candidate) => candidate.bookingNo === record.bookingNo) === index,
   );
