@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Baby, Check, Crown, LoaderCircle, Ticket, User } from "lucide-react";
+import { Baby, Check, Crown, LoaderCircle, User } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { createBookingDraft, fetchTicketTypes } from "@/lib/ferry";

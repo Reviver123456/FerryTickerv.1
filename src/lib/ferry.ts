@@ -3,7 +3,6 @@ import type {
   BookingDraft,
   PassengerType,
   ScheduleSummary,
-  SelectedTicketItem,
   TicketRecord,
   TicketTypeOption,
 } from "@/lib/app-types";
