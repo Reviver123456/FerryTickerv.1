@@ -249,13 +249,51 @@ function normalizeDateValue(value?: string) {
     return null;
   }
 
-  const directDate = new Date(value);
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const dateOnlyMatch = trimmedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (dateOnlyMatch) {
+    const localDate = new Date(
+      Number(dateOnlyMatch[1]),
+      Number(dateOnlyMatch[2]) - 1,
+      Number(dateOnlyMatch[3]),
+    );
+
+    if (!Number.isNaN(localDate.getTime())) {
+      return localDate;
+    }
+  }
+
+  const localDateTimeMatch = trimmedValue.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+
+  if (localDateTimeMatch) {
+    const localDate = new Date(
+      Number(localDateTimeMatch[1]),
+      Number(localDateTimeMatch[2]) - 1,
+      Number(localDateTimeMatch[3]),
+      Number(localDateTimeMatch[4]),
+      Number(localDateTimeMatch[5]),
+      Number(localDateTimeMatch[6] ?? "0"),
+      0,
+    );
+
+    if (!Number.isNaN(localDate.getTime())) {
+      return localDate;
+    }
+  }
+
+  const directDate = new Date(trimmedValue);
 
   if (!Number.isNaN(directDate.getTime())) {
     return directDate;
   }
 
-  const timeOnlyMatch = value.match(/^(\d{1,2}):(\d{2})/);
+  const timeOnlyMatch = trimmedValue.match(/^(\d{1,2}):(\d{2})/);
 
   if (timeOnlyMatch) {
     const now = new Date();
@@ -440,7 +478,7 @@ function normalizeSchedule(record: UnknownRecord): ScheduleSummary {
   const departureValue =
     pickString(record, ["departure_at", "departure_time", "depart_at", "travel_time", "time", "scheduled_at"]) ||
     pickString(record, ["datetime", "departure_datetime"]);
-  const dateValue = pickString(record, ["travel_date", "date", "departure_date", "schedule_date"]);
+  const dateValue = pickString(record, ["travel_date", "trip_date", "date", "departure_date", "schedule_date"]);
   const derivedDate = normalizeDateValue(departureValue) ?? normalizeDateValue(dateValue);
   const dateKey = dateValue ? formatDateKey(dateValue) : derivedDate ? formatDateKey(derivedDate) : getTodayDateKey();
   const dateLabel = formatThaiDate(dateValue || departureValue || dateKey);
@@ -449,7 +487,7 @@ function normalizeSchedule(record: UnknownRecord): ScheduleSummary {
   const totalSeatsValue = pickNumber(record, ["capacity", "total_seats", "total", "seat_capacity"], 0);
   const totalSeats = totalSeatsValue > 0 ? totalSeatsValue : null;
   const price = pickNumber(record, ["price", "adult_price", "fare", "unit_price", "amount"], 0);
-  const routeName = pickString(record, ["route_name", "route", "name", "trip_name"], "เที่ยวเรือ");
+  const routeName = pickString(record, ["route_name", "route", "name", "trip_name", "boat_name", "schedule_code"], "เที่ยวเรือ");
   const status = deriveScheduleStatus(
     availableSeats,
     totalSeats,

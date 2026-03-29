@@ -22,12 +22,13 @@ export function Login() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
+  const [redirectPath, setRedirectPath] = useState("/profile");
 
   useEffect(() => {
     if (authUser) {
-      navigate("/profile");
+      navigate(redirectPath);
     }
-  }, [authUser, navigate]);
+  }, [authUser, navigate, redirectPath]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -35,9 +36,21 @@ export function Login() {
     }
 
     const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect");
+
+    if (redirect && redirect.startsWith("/")) {
+      setRedirectPath(redirect);
+    } else {
+      setRedirectPath("/profile");
+    }
 
     if (params.get("registered") === "1") {
       setInfoMessage("สมัครสมาชิกสำเร็จแล้ว กรุณาเข้าสู่ระบบเพื่อใช้งานต่อ");
+      return;
+    }
+
+    if (redirect && redirect.startsWith("/")) {
+      setInfoMessage("กรุณาเข้าสู่ระบบก่อนเลือกจองรอบเรือ");
       return;
     }
 
@@ -78,7 +91,7 @@ export function Login() {
       });
 
       setAuthUser(user);
-      navigate("/profile");
+      navigate(redirectPath);
     } catch (error) {
       setErrors({
         form: error instanceof Error ? error.message : "เข้าสู่ระบบไม่สำเร็จ",

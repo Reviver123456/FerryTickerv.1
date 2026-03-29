@@ -95,7 +95,7 @@ export function Success() {
             <h1 className="text-2xl mb-3">ยังไม่มีข้อมูลการจองล่าสุด</h1>
             <p className="text-sm text-gray-600 mb-4">กลับไปเริ่มขั้นตอนจองตั๋วใหม่ได้จากหน้าแรกหรือหน้าค้นหารอบเรือ</p>
             <button
-              onClick={() => navigate("/search")}
+              onClick={() => navigate("/")}
               className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white"
             >
               ไปหน้าเริ่มจอง
@@ -227,7 +227,7 @@ export function Success() {
           </button>
 
           <button
-            onClick={() => navigate("/search")}
+            onClick={() => navigate("/")}
             className="w-full py-4 rounded-2xl bg-white border-2 border-gray-200 hover:border-[#0EA5E9] transition-all"
           >
             จองตั๋วใหม่

@@ -35,18 +35,24 @@ function getScheduleDepartureTime(schedule: ScheduleSummary, dateKey: string) {
 
 export function Home() {
   const navigate = useNavigate();
-  const { booking, setSelectedSchedule, updateSearch } = useAppContext();
+  const { authUser, booking, setSelectedSchedule, updateSearch } = useAppContext();
   const datePickerWrapRef = useRef<HTMLDivElement | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
   const pickerRef = useRef<Litepicker | null>(null);
   const schedulesSectionRef = useRef<HTMLDivElement | null>(null);
-  const [travelDate, setTravelDate] = useState(booking.search.travelDate || getTodayDateKey());
+  const [todayDateKey, setTodayDateKey] = useState("");
+  const [travelDate, setTravelDate] = useState("");
   const [passengers, setPassengers] = useState(booking.search.passengers);
+  const [displayedDateKey, setDisplayedDateKey] = useState("");
+  const [displayedPassengers, setDisplayedPassengers] = useState(booking.search.passengers);
   const [allSchedules, setAllSchedules] = useState<ScheduleSummary[]>([]);
 
   useEffect(() => {
-    setTravelDate(booking.search.travelDate || getTodayDateKey());
-  }, [booking.search.travelDate]);
+    const clientTodayDateKey = getTodayDateKey();
+    setTodayDateKey(clientTodayDateKey);
+    setTravelDate(clientTodayDateKey);
+    setDisplayedDateKey(clientTodayDateKey);
+  }, []);
 
   useEffect(() => {
     setPassengers(booking.search.passengers);
@@ -136,11 +142,13 @@ export function Home() {
     { title: "ชำระง่ายผ่าน PromptPay QR", subtitle: "Flow การชำระเงินจริงเชื่อมกับ API แล้ว", image: "QR" },
     { title: "ค้นหาตั๋วด้วย booking number", subtitle: "ใช้ booking_no และอีเมลเดิมเพื่อตรวจสอบตั๋ว", image: "BK" },
   ];
-  const searchedDateKey = booking.search.travelDate || getTodayDateKey();
+  const activeTodayDateKey = todayDateKey || getTodayDateKey();
+  const activeDateKey = travelDate || activeTodayDateKey;
+  const searchedDateKey = displayedDateKey || activeTodayDateKey;
   const searchedDateLabel = formatThaiDate(searchedDateKey);
-  const searchedPassengers = booking.search.passengers;
+  const searchedPassengers = displayedPassengers;
+  const isShowingToday = searchedDateKey === activeTodayDateKey;
   const displayedSchedules = useMemo(() => {
-    const todayDateKey = getTodayDateKey();
     const now = new Date();
 
     return allSchedules
@@ -149,7 +157,7 @@ export function Home() {
           return false;
         }
 
-        if (searchedDateKey !== todayDateKey) {
+        if (searchedDateKey !== activeTodayDateKey) {
           return true;
         }
 
@@ -157,7 +165,7 @@ export function Home() {
         return departureTime ? departureTime >= now : true;
       })
       .slice(0, 6);
-  }, [allSchedules, searchedDateKey]);
+  }, [activeTodayDateKey, allSchedules, searchedDateKey]);
 
   const faqs = useMemo(
     () => [
@@ -202,7 +210,7 @@ export function Home() {
                   ref={dateInputRef}
                   type="text"
                   readOnly
-                  defaultValue={formatThaiDate(travelDate || getTodayDateKey())}
+                  value={formatThaiDate(activeDateKey)}
                   className="w-full border-0 bg-transparent text-gray-900 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 cursor-pointer shadow-none"
                   style={{ border: "none" }}
                 />
@@ -237,7 +245,9 @@ export function Home() {
 
             <button
               onClick={() => {
-                updateSearch({ passengers, travelDate });
+                setDisplayedDateKey(activeDateKey);
+                setDisplayedPassengers(passengers);
+                updateSearch({ passengers, travelDate: activeDateKey });
                 window.requestAnimationFrame(() => {
                   schedulesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 });
@@ -252,9 +262,10 @@ export function Home() {
 
       <div ref={schedulesSectionRef} className="max-w-7xl mx-auto px-4 mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl">รอบเรือของวันที่ {searchedDateLabel}</h2>
+          <h2 className="text-xl">{isShowingToday ? "รอบเรือของวันนี้" : `รอบเรือของวันที่ ${searchedDateLabel}`}</h2>
           <button
             onClick={() => {
+              updateSearch({ passengers: searchedPassengers, travelDate: searchedDateKey });
               navigate("/schedules");
             }}
             className="text-sm text-[#0EA5E9] hover:text-[#2563EB] flex items-center gap-1"
@@ -279,7 +290,14 @@ export function Home() {
                         return;
                       }
 
+                      updateSearch({ passengers: searchedPassengers, travelDate: searchedDateKey });
                       setSelectedSchedule(schedule);
+
+                      if (!authUser) {
+                        navigate("/login?redirect=/select-ticket");
+                        return;
+                      }
+
                       navigate("/select-ticket");
                     }}
                     disabled={!isAvailable}
@@ -316,7 +334,9 @@ export function Home() {
               })
             ) : (
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 min-w-[280px]">
-                <div className="text-sm text-gray-600">ยังไม่พบรอบเรือของวันที่ {searchedDateLabel} ตอนนี้</div>
+                <div className="text-sm text-gray-600">
+                  {isShowingToday ? "ยังไม่พบรอบเรือของวันนี้ตอนนี้" : `ยังไม่พบรอบเรือของวันที่ ${searchedDateLabel} ตอนนี้`}
+                </div>
               </div>
             )}
           </div>

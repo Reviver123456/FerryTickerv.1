@@ -1,5 +1,5 @@
-import { SearchSchedule } from "../components/pages/SearchSchedule";
+import { redirect } from "next/navigation";
 
 export default function SearchPage() {
-  return <SearchSchedule />;
+  redirect("/");
 }

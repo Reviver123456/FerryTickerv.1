@@ -9,7 +9,7 @@ import type { ScheduleSummary } from "@/lib/app-types";
 
 export function ScheduleResults() {
   const navigate = useNavigate();
-  const { booking, setSelectedSchedule } = useAppContext();
+  const { authUser, booking, setSelectedSchedule } = useAppContext();
   const [schedules, setSchedules] = useState<ScheduleSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -96,7 +96,7 @@ export function ScheduleResults() {
               ลองเปลี่ยนวันที่หรือช่วงเวลา แล้วค้นหาอีกครั้ง ระบบกำลังใช้ข้อมูลจาก `GET /api/schedules`
             </p>
             <button
-              onClick={() => navigate("/search")}
+              onClick={() => navigate("/")}
               className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white"
             >
               กลับไปค้นหาใหม่
@@ -176,6 +176,12 @@ export function ScheduleResults() {
                     <button
                       onClick={() => {
                         setSelectedSchedule(schedule);
+
+                        if (!authUser) {
+                          navigate("/login?redirect=/select-ticket");
+                          return;
+                        }
+
                         navigate("/select-ticket");
                       }}
                       disabled={!isAvailable}

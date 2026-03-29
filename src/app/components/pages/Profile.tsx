@@ -85,7 +85,7 @@ export function Profile() {
       description: "เริ่มค้นหารอบเรือและเลือกตั๋ว",
       action: () => {
         resetCurrentBooking();
-        navigate("/search");
+        navigate("/");
       },
     },
     {

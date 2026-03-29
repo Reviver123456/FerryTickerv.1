@@ -17,7 +17,7 @@ export function Summary() {
             <h1 className="text-2xl mb-3">ยังไม่มีข้อมูลสรุปการจอง</h1>
             <p className="text-sm text-gray-600 mb-4">เริ่มจากเลือกรอบเรือและประเภทตั๋วก่อน แล้วค่อยกลับมาตรวจสอบรายการ</p>
             <button
-              onClick={() => navigate("/search")}
+              onClick={() => navigate("/")}
               className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white"
             >
               ไปหน้าเริ่มจอง

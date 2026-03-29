@@ -143,7 +143,7 @@ export function MyTickets() {
             </p>
             {activeTab === "unused" && (
               <button
-                onClick={() => navigate("/search")}
+                onClick={() => navigate("/")}
                 className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg transition-shadow"
               >
                 จองตั๋วเลย

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import clsx from "clsx";
-import { Bell, FileText, Home, Ship, Ticket, User } from "lucide-react";
+import { Bell, FileText, Home, Ship, User } from "lucide-react";
 import { Link, useLocation } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import styles from "./Layout.module.css";
@@ -32,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
   const { pathname } = useLocation();
   const { authUser } = useAppContext();
   const desktopItems: NavItem[] = [
-    { href: "/search", label: "จองตั๋ว", paths: ["/search", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"] },
+    { href: "/", label: "หน้าแรก", paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"] },
     { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"] },
     { href: "/promotions", label: "ข่าวสาร", paths: ["/promotions"] },
     { href: "/help", label: "ช่วยเหลือ", paths: ["/help"] },
@@ -44,13 +44,7 @@ export function Layout({ children }: LayoutProps) {
         ]),
   ];
   const mobileItems = [
-    { href: "/", label: "หน้าแรก", paths: ["/"], icon: Home },
-    {
-      href: "/search",
-      label: "จองตั๋ว",
-      paths: ["/search", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"],
-      icon: Ticket,
-    },
+    { href: "/", label: "หน้าแรก", paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"], icon: Home },
     { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"], icon: FileText },
     { href: "/promotions", label: "แจ้งเตือน", paths: ["/promotions"], icon: Bell },
     {
