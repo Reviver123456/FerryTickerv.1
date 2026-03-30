@@ -31,13 +31,14 @@ function isActive(pathname: string, paths: string[]) {
 export function Layout({ children }: LayoutProps) {
   const { pathname } = useLocation();
   const { authUser } = useAppContext();
+  const desktopProfileName = authUser?.fullName?.trim() || authUser?.email || "โปรไฟล์";
   const desktopItems: NavItem[] = [
     { href: "/", label: "หน้าแรก", paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"] },
     { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"] },
     { href: "/promotions", label: "ข่าวสาร", paths: ["/promotions"] },
     { href: "/help", label: "ช่วยเหลือ", paths: ["/help"] },
     ...(authUser
-      ? [{ href: "/profile", label: "โปรไฟล์", paths: ["/profile"], variant: "button" as const }]
+      ? []
       : [
           { href: "/register", label: "สมัครสมาชิก", paths: ["/register"] },
           { href: "/login", label: "เข้าสู่ระบบ", paths: ["/login"], variant: "button" as const },
@@ -79,6 +80,26 @@ export function Layout({ children }: LayoutProps) {
                 {item.label}
               </Link>
             ))}
+
+            {authUser ? (
+              <Link
+                href="/profile"
+                className={clsx(styles.desktopProfileButton, isActive(pathname, ["/profile"]) && styles.desktopProfileButtonActive)}
+              >
+                <span className={styles.desktopProfileAvatar}>
+                  {authUser.profileImageUrl ? (
+                    <img
+                      src={authUser.profileImageUrl}
+                      alt={desktopProfileName}
+                      className={styles.desktopProfileAvatarImage}
+                    />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
+                </span>
+                <span className={styles.desktopProfileName}>{desktopProfileName}</span>
+              </Link>
+            ) : null}
           </div>
         </div>
       </nav>

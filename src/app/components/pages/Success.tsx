@@ -11,8 +11,6 @@ export function Success() {
   const navigate = useNavigate();
   const { booking, addRecentBooking, setLastLookup } = useAppContext();
   const [tickets, setTickets] = useState<TicketRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const totalAmount = useMemo(
     () => booking.selectedTickets.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
@@ -27,9 +25,6 @@ export function Success() {
     let ignore = false;
 
     async function loadTickets() {
-      setIsLoading(true);
-      setError("");
-
       try {
         const result = await fetchTicketsByBooking(booking.draft!.bookingNo, booking.contact.email);
 
@@ -60,11 +55,7 @@ export function Success() {
         });
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : "ยังไม่สามารถดึงตั๋วได้");
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false);
+          setTickets([]);
         }
       }
     }
@@ -165,8 +156,6 @@ export function Success() {
           </div>
         </div>
 
-        {isLoading ? <div className="info-banner mb-6">กำลังตรวจสอบตั๋วจาก API...</div> : null}
-        {error ? <div className="error-banner mb-6">{error}</div> : null}
 
         {tickets.length > 0 ? (
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
@@ -223,7 +212,7 @@ export function Success() {
             onClick={() => navigate("/my-tickets")}
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white shadow-lg hover:shadow-xl transition-all"
           >
-            ไปที่ "ตั๋วของฉัน"
+            แสดงตั๋วของฉัน
           </button>
 
           <button

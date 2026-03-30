@@ -6,6 +6,8 @@ export type AuthUser = {
   fullName: string;
   phone: string;
   email: string;
+  profileImageUrl?: string;
+  accessToken?: string;
   raw?: unknown;
 };
 

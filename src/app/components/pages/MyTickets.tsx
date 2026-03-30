@@ -24,6 +24,16 @@ type TicketCardItem = {
   tab: TicketTab;
 };
 
+function resolveDisplayValue(...values: Array<string | null | undefined>) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim() && value.trim() !== "-") {
+      return value.trim();
+    }
+  }
+
+  return "-";
+}
+
 export function MyTickets() {
   const navigate = useNavigate();
   const { booking, setLastLookup } = useAppContext();
@@ -46,9 +56,9 @@ export function MyTickets() {
               tickets: record.tickets,
               ticketNo: undefined,
               displayRef: record.bookingNo,
-              displayTitle: record.scheduleDate,
-              displayDate: record.scheduleDate,
-              displayTime: record.scheduleTime,
+              displayTitle: resolveDisplayValue(record.scheduleDate, record.scheduleTime, record.bookingNo),
+              displayDate: resolveDisplayValue(record.scheduleDate),
+              displayTime: resolveDisplayValue(record.scheduleTime),
               qrImageUrl: undefined,
               statusLabel: statusMeta.label,
               statusClassName: statusMeta.badgeClassName,
@@ -71,9 +81,9 @@ export function MyTickets() {
             tickets: record.tickets,
             ticketNo: issuedTicket.ticketNo || undefined,
             displayRef: issuedTicket.ticketNo || record.bookingNo,
-            displayTitle: issuedTicket.passengerName || record.scheduleDate,
-            displayDate: issuedTicket.travelDate || record.scheduleDate,
-            displayTime: issuedTicket.travelTime || record.scheduleTime,
+            displayTitle: resolveDisplayValue(issuedTicket.passengerName, record.scheduleDate, record.bookingNo),
+            displayDate: resolveDisplayValue(issuedTicket.travelDate, record.scheduleDate),
+            displayTime: resolveDisplayValue(issuedTicket.travelTime, record.scheduleTime),
             qrImageUrl: getTicketQrImageUrl(issuedTicket),
             statusLabel: statusMeta.label,
             statusClassName: statusMeta.badgeClassName,

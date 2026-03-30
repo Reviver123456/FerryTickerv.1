@@ -1,5 +1,7 @@
 "use client";
 
+import type { ChangeEvent } from "react";
+import { useRef, useState } from "react";
 import {
   Bell,
   Calendar,
@@ -15,12 +17,22 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
+import { uploadProfileImage } from "@/lib/ferry";
+
+function isUsedTicketStatus(status: string) {
+  return /used|validated|scanned|boarded|completed/i.test(status);
+}
 
 export function Profile() {
   const navigate = useNavigate();
-  const { authUser, booking, logout, resetCurrentBooking } = useAppContext();
-  const latestBooking = booking.recentBookings[0];
-  const totalBookings = booking.recentBookings.length;
+  const { authUser, booking, logout, resetCurrentBooking, setAuthUser } = useAppContext();
+  const allTickets = booking.recentBookings.flatMap((record) => record.tickets);
+  const totalUsedTickets = allTickets.filter((ticket) => isUsedTicketStatus(ticket.status)).length;
+  const totalUnusedTickets = allTickets.length - totalUsedTickets;
+  const profileImageInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [imageMessage, setImageMessage] = useState("");
 
   if (!authUser) {
     return (
@@ -102,28 +114,135 @@ export function Profile() {
     },
   ];
 
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+      setImageMessage("");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("ไฟล์รูปต้องมีขนาดไม่เกิน 5MB");
+      setImageMessage("");
+      return;
+    }
+
+    if (!authUser.accessToken) {
+      setImageError("กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่อีกครั้งก่อนอัปโหลดรูป");
+      setImageMessage("");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageError("");
+    setImageMessage("");
+
+    try {
+      const updatedUser = await uploadProfileImage(file, authUser);
+      setAuthUser(updatedUser);
+      setImageMessage("อัปโหลดรูปโปรไฟล์สำเร็จแล้ว");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ";
+
+      setImageError(
+        /unauthorized/i.test(message)
+          ? "สิทธิ์หมดอายุหรือยังไม่ได้รับ token กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ก่อน"
+          : message,
+      );
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const openProfileImagePicker = () => {
+    if (isUploadingImage) {
+      return;
+    }
+
+    profileImageInputRef.current?.click();
+  };
+
   return (
     <div className="booking-page">
       <div className="booking-page__container booking-page__container--sm">
         <div className="bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] rounded-3xl p-8 mb-6 text-white shadow-xl">
           <div className="flex items-center gap-6 mb-6">
-            <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <User className="w-10 h-10 text-white" />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={openProfileImagePicker}
+                className={`relative block w-24 h-24 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm ${
+                  isUploadingImage ? "cursor-not-allowed" : "cursor-pointer"
+                }`}
+                aria-label={authUser.profileImageUrl ? "แก้ไขรูปโปรไฟล์" : "เพิ่มรูปโปรไฟล์"}
+              >
+                {authUser.profileImageUrl ? (
+                  <img
+                    src={authUser.profileImageUrl}
+                    alt={authUser.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                    <User className="w-10 h-10 text-white" />
+                  </div>
+                )}
+
+                <div className="absolute inset-0 bg-slate-900/0 hover:bg-slate-900/10 transition-colors" />
+              </button>
+
+              <input
+                ref={profileImageInputRef}
+                id="profile-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={isUploadingImage}
+                tabIndex={-1}
+                hidden
+                style={{ display: "none" }}
+                aria-hidden="true"
+              />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl mb-1">{authUser.fullName}</h1>
-              <p className="text-blue-100 text-sm">เชื่อมกับ API `login/register` แล้ว</p>
+              <p className="text-blue-100 text-sm">
+                {isUploadingImage
+                  ? "กำลังอัปโหลดรูปโปรไฟล์..."
+                  : authUser.profileImageUrl
+                    ? "แตะที่รูปเพื่อเปลี่ยนรูปโปรไฟล์"
+                    : "แตะที่รูปเพื่อเพิ่มรูปโปรไฟล์"}
+              </p>
             </div>
           </div>
 
+          {imageMessage ? (
+            <div className="mb-6 p-4 rounded-2xl border border-white/25 bg-white/12 text-sm text-white">
+              {imageMessage}
+            </div>
+          ) : null}
+
+          {imageError ? (
+            <div className="mb-6 p-4 rounded-2xl border border-red-200/70 bg-red-500/15 text-sm text-red-50">
+              {imageError}
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-              <div className="text-3xl mb-1">{totalBookings}</div>
-              <div className="text-sm text-blue-100">booking ล่าสุดในเครื่อง</div>
+              <div className="text-3xl mb-1">{totalUnusedTickets}</div>
+              <div className="text-sm text-blue-100">ตั๋วที่ยังไม่ได้ใช้</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-              <div className="text-sm mb-1">ล่าสุด</div>
-              <div className="text-sm text-blue-100">{latestBooking?.bookingNo ?? "ยังไม่มี"}</div>
+              <div className="text-3xl mb-1">{totalUsedTickets}</div>
+              <div className="text-sm text-blue-100">ตั๋วที่ใช้แล้ว</div>
             </div>
           </div>
         </div>
@@ -147,16 +266,6 @@ export function Profile() {
                 <div className="text-sm">{authUser.phone || "-"}</div>
               </div>
             </div>
-
-            {latestBooking ? (
-              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                <div className="text-xs text-gray-600 mb-1">การจองล่าสุด</div>
-                <div className="text-sm mb-1">{latestBooking.bookingNo}</div>
-                <div className="text-xs text-gray-600">
-                  {latestBooking.scheduleDate} • {latestBooking.scheduleTime}
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
 

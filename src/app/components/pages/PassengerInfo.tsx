@@ -7,6 +7,7 @@ import { useAppContext } from "@/app/providers/AppProvider";
 import {
   createDefaultPassenger,
   createEmptyContactInfo,
+  formatCurrency,
   isValidEmail,
   isValidPhone,
   sanitizePhone,
@@ -15,16 +16,21 @@ import {
 import type { ContactInfo, PassengerForm, PassengerType } from "@/lib/app-types";
 
 type FormErrors = Record<string, string>;
+type ExpectedPassengerDetail = {
+  passengerType: PassengerType;
+  ticketName: string;
+  unitPrice: number;
+};
 
-function buildPassengerTypes(passengers: PassengerForm[], expectedTypes: PassengerType[]) {
-  if (expectedTypes.length === 0) {
+function buildPassengerTypes(passengers: PassengerForm[], expectedPassengers: ExpectedPassengerDetail[]) {
+  if (expectedPassengers.length === 0) {
     return passengers.length > 0 ? passengers : [createDefaultPassenger()];
   }
 
-  return expectedTypes.map((passengerType, index) => ({
+  return expectedPassengers.map((expectedPassenger, index) => ({
     id: passengers[index]?.id ?? createDefaultPassenger().id,
     fullName: passengers[index]?.fullName ?? "",
-    passengerType,
+    passengerType: expectedPassenger.passengerType,
   }));
 }
 
@@ -38,8 +44,15 @@ export function PassengerInfo() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const expectedPassengerTypes = useMemo(
-    () => booking.selectedTickets.flatMap((item) => Array.from({ length: item.quantity }, () => item.passengerType)),
+  const expectedPassengers = useMemo(
+    () =>
+      booking.selectedTickets.flatMap((item) =>
+        Array.from({ length: item.quantity }, () => ({
+          passengerType: item.passengerType,
+          ticketName: item.name,
+          unitPrice: item.unitPrice,
+        })),
+      ),
     [booking.selectedTickets],
   );
 
@@ -53,10 +66,12 @@ export function PassengerInfo() {
       phone: booking.contact.phone || authUser?.phone || "",
       email: booking.contact.email || authUser?.email || "",
     });
-    setPassengersState(buildPassengerTypes(booking.passengers, expectedPassengerTypes));
-  }, [authUser, booking.contact.email, booking.contact.fullName, booking.contact.phone, booking.draft, booking.passengers, expectedPassengerTypes]);
+    setPassengersState(buildPassengerTypes(booking.passengers, expectedPassengers));
+  }, [authUser, booking.contact.email, booking.contact.fullName, booking.contact.phone, booking.draft, booking.passengers, expectedPassengers]);
 
   const totalPassengers = passengers.length;
+  const getPassengerTypeLabel = (passenger: PassengerForm) =>
+    passenger.passengerType === "child" ? "เด็ก" : "ผู้ใหญ่";
 
   const updatePassenger = (id: string, field: keyof PassengerForm, value: string) => {
     setPassengersState((current) =>
@@ -172,10 +187,6 @@ export function PassengerInfo() {
           </p>
         </div>
 
-        <div className="info-banner mb-6">
-          ฟอร์มนี้จะส่งข้อมูลไปที่ `PUT /api/bookings/{booking.draft.bookingNo}` โดยใช้ข้อมูลผู้จองและรายชื่อผู้โดยสารทุกคน
-        </div>
-
         {submitError ? <div className="error-banner mb-6">{submitError}</div> : null}
 
         <div className="space-y-6 mb-32">
@@ -189,21 +200,14 @@ export function PassengerInfo() {
               <div>
                 <label className="field-label">
                   ชื่อ-นามสกุล
-                  <span className="field-label__required">จำเป็น</span>
                 </label>
                 <input
                   type="text"
                   value={contactInfo.fullName}
-                  onChange={(event) =>
-                    setContactInfo((current) => ({
-                      ...current,
-                      fullName: event.target.value,
-                    }))
-                  }
                   placeholder="ชื่อ-นามสกุลผู้จอง"
-                  className={`form-input ${errors.contactFullName ? "form-input--error" : ""}`}
+                  className={`form-input bg-gray-100 text-gray-700 cursor-not-allowed ${errors.contactFullName ? "form-input--error" : ""}`}
+                  readOnly
                 />
-                <div className="field-help">จะถูกส่งเป็น `contact_name`</div>
                 {errors.contactFullName ? <div className="field-error">{errors.contactFullName}</div> : null}
               </div>
 
@@ -211,21 +215,14 @@ export function PassengerInfo() {
                 <label className="field-label">
                   <Phone className="w-4 h-4" />
                   เบอร์โทรศัพท์
-                  <span className="field-label__required">จำเป็น</span>
                 </label>
                 <input
                   type="tel"
                   value={contactInfo.phone}
-                  onChange={(event) =>
-                    setContactInfo((current) => ({
-                      ...current,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="0812345678"
-                  className={`form-input ${errors.contactPhone ? "form-input--error" : ""}`}
+                  placeholder="กรอกเบอร์โทรศัพท์"
+                  className={`form-input bg-gray-100 text-gray-700 cursor-not-allowed ${errors.contactPhone ? "form-input--error" : ""}`}
+                  readOnly
                 />
-                <div className="field-help">ใช้ติดต่อกรณีต้องแจ้งข้อมูลเกี่ยวกับการเดินทาง</div>
                 {errors.contactPhone ? <div className="field-error">{errors.contactPhone}</div> : null}
               </div>
 
@@ -233,21 +230,14 @@ export function PassengerInfo() {
                 <label className="field-label">
                   <Mail className="w-4 h-4" />
                   อีเมล
-                  <span className="field-label__required">จำเป็น</span>
                 </label>
                 <input
                   type="email"
                   value={contactInfo.email}
-                  onChange={(event) =>
-                    setContactInfo((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
-                  }
                   placeholder="example@email.com"
-                  className={`form-input ${errors.contactEmail ? "form-input--error" : ""}`}
+                  className={`form-input bg-gray-100 text-gray-700 cursor-not-allowed ${errors.contactEmail ? "form-input--error" : ""}`}
+                  readOnly
                 />
-                <div className="field-help">ใช้สำหรับชำระเงินและค้นหาตั๋วด้วย booking number</div>
                 {errors.contactEmail ? <div className="field-error">{errors.contactEmail}</div> : null}
               </div>
             </div>
@@ -265,9 +255,16 @@ export function PassengerInfo() {
             <div className="space-y-4">
               {passengers.map((passenger, idx) => (
                 <div key={passenger.id} className="p-4 rounded-2xl bg-gray-50 space-y-3">
+                  {(() => {
+                    const ticketDetail = expectedPassengers[idx];
+                    const ticketName = ticketDetail?.ticketName || getPassengerTypeLabel(passenger);
+                    const ticketPrice = ticketDetail?.unitPrice ?? 0;
+
+                    return (
+                      <>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">ผู้โดยสาร #{idx + 1}</span>
-                    <span className="field-label__required">{passenger.passengerType === "child" ? "เด็ก" : "ผู้ใหญ่"}</span>
+                    <span className="text-sm text-gray-600">ผู้โดยสาร {idx + 1}</span>
+                    <span className="field-label__required">{ticketName}</span>
                   </div>
 
                   <div>
@@ -289,21 +286,23 @@ export function PassengerInfo() {
 
                   <div>
                     <label className="field-label">
-                      ประเภทผู้โดยสาร
-                      <span className="field-label__required">จำเป็น</span>
+                      ประเภทตั๋ว
                     </label>
-                    <select
-                      value={passenger.passengerType}
-                      onChange={(event) =>
-                        updatePassenger(passenger.id, "passengerType", event.target.value as PassengerType)
-                      }
-                      className="form-select"
-                    >
-                      <option value="adult">adult</option>
-                      <option value="child">child</option>
-                    </select>
-                    <div className="field-help">จะถูกส่งเป็น `passenger_type` ให้ backend</div>
+                    <div className="form-input bg-gray-100 text-gray-700 cursor-not-allowed select-none">
+                      {ticketName}
+                    </div>
+                    <div className="field-help">ระบบพรีฟิลจากข้อมูลตั๋วที่เลือกในหน้า select-ticket และไม่อนุญาตให้แก้ไข</div>
                   </div>
+
+                  <div>
+                    <label className="field-label">ราคา</label>
+                    <div className="form-input bg-gray-100 text-gray-700 cursor-not-allowed select-none">
+                      ฿{formatCurrency(ticketPrice)}
+                    </div>
+                  </div>
+                      </>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

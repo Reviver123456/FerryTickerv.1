@@ -39,10 +39,6 @@ export function Summary() {
           <p className="text-gray-600 text-sm">Booking No: {booking.draft.bookingNo}</p>
         </div>
 
-        <div className="info-banner mb-6">
-          ข้อมูลชุดนี้ถูกสร้างจาก flow จริงแล้ว ทั้ง `schedule`, `booking draft`, รายชื่อผู้โดยสาร และข้อมูลติดต่อสำหรับชำระเงิน
-        </div>
-
         <div className="space-y-4 mb-32">
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
@@ -162,12 +158,12 @@ export function Summary() {
             </div>
           </div>
 
-          <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+          <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100 text-red-700">
             <h3 className="mb-3">เงื่อนไขสำคัญก่อนชำระเงิน</h3>
-            <ul className="text-sm text-gray-700 space-y-2">
-              <li>• กรุณาตรวจสอบชื่อผู้โดยสารและอีเมลให้ถูกต้องก่อนสร้างรายการชำระเงิน</li>
-              <li>• การค้นหาตั๋วหลังชำระเงินจะอ้างอิง `booking_no` และ `contact_email` ชุดนี้</li>
-              <li>• ควรมาถึงท่าเรือก่อนเวลาออกเดินทางอย่างน้อย 15 นาที</li>
+            <ul className="text-sm space-y-2">
+              <li>กรุณาตรวจสอบชื่อผู้โดยสารและอีเมลให้ถูกต้องก่อนสร้างรายการชำระเงิน</li>
+              <li>การค้นหาตั๋วหลังชำระเงินจะอ้างอิง booking no หรือ email ชุดนี้</li>
+              <li>ควรมาถึงท่าเรือก่อนเวลาออกเดินทางอย่างน้อย 15 นาที</li>
             </ul>
           </div>
 

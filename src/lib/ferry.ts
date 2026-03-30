@@ -11,7 +11,7 @@ type UnknownRecord = Record<string, unknown>;
 
 const DEFAULT_API_BASE_URL = "";
 
-export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/+$/, "");
 
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -21,11 +21,15 @@ function uniqueId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function toJsonHeaders(headers?: HeadersInit) {
-  return {
-    "Content-Type": "application/json",
-    ...(headers ?? {}),
-  };
+function buildRequestHeaders(init?: RequestInit) {
+  const headers = new Headers(init?.headers);
+  const isFormDataBody = typeof FormData !== "undefined" && init?.body instanceof FormData;
+
+  if (!isFormDataBody && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  return headers;
 }
 
 async function readJsonSafely(response: Response) {
@@ -73,7 +77,7 @@ function extractMessage(value: unknown): string | null {
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: toJsonHeaders(init?.headers),
+    headers: buildRequestHeaders(init),
     cache: "no-store",
   });
 
@@ -196,6 +200,45 @@ function pickString(source: UnknownRecord | null, keys: string[], fallback = "")
   }
 
   return fallback;
+}
+
+function extractAccessToken(value: unknown): string | undefined {
+  const queue: unknown[] = [value];
+  const seen = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    if (!current || seen.has(current)) {
+      continue;
+    }
+
+    seen.add(current);
+
+    if (isRecord(current)) {
+      const token = pickString(current, ["access_token", "accessToken", "token", "jwt", "id_token"], "");
+
+      if (token) {
+        return token;
+      }
+
+      for (const nestedValue of Object.values(current)) {
+        if (isRecord(nestedValue) || Array.isArray(nestedValue)) {
+          queue.push(nestedValue);
+        }
+      }
+    }
+
+    if (Array.isArray(current)) {
+      for (const nestedValue of current) {
+        if (isRecord(nestedValue) || Array.isArray(nestedValue)) {
+          queue.push(nestedValue);
+        }
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function pickNumber(source: UnknownRecord | null, keys: string[], fallback = 0) {
@@ -370,7 +413,7 @@ export function formatThaiWeekday(value: Date | string) {
   }).format(date);
 }
 
-export function formatTimeLabel(value?: string) {
+function formatTimeLabel(value?: string) {
   if (!value) {
     return "-";
   }
@@ -398,24 +441,12 @@ export function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH").format(value);
 }
 
-export function getTimeFilterForHour(hour: number) {
-  if (hour < 12) {
-    return "morning";
-  }
-
-  if (hour < 17) {
-    return "afternoon";
-  }
-
-  return "evening";
-}
-
 export function getHourFromTimeLabel(value: string) {
   const match = value.match(/^(\d{1,2}):/);
   return match ? Number(match[1]) : null;
 }
 
-export function deriveScheduleStatus(availableSeats: number, totalSeats: number | null, currentStatus = "") {
+function deriveScheduleStatus(availableSeats: number, totalSeats: number | null, currentStatus = "") {
   if (currentStatus.trim()) {
     return currentStatus;
   }
@@ -437,11 +468,37 @@ export function deriveScheduleStatus(availableSeats: number, totalSeats: number 
   return "ว่าง";
 }
 
-export function inferPassengerType(label: string): PassengerType {
+function inferPassengerType(label: string): PassengerType {
   return /child|kid|เด็ก/i.test(label) ? "child" : "adult";
 }
 
-export function createPassengerId() {
+function formatTicketTypeLabel(value: string, passengerType: PassengerType) {
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return passengerType === "child" ? "ตั๋วเด็ก" : "ตั๋วผู้ใหญ่";
+  }
+
+  if (/^child|kid|เด็ก$/i.test(normalized)) {
+    return "ตั๋วเด็ก";
+  }
+
+  if (/^adult|ผู้ใหญ่$/i.test(normalized)) {
+    return "ตั๋วผู้ใหญ่";
+  }
+
+  if (/^standard|normal|มาตรฐาน$/i.test(normalized)) {
+    return passengerType === "child" ? "ตั๋วเด็ก" : "ตั๋วผู้ใหญ่";
+  }
+
+  if (/^vip|premium$/i.test(normalized)) {
+    return "ตั๋ว VIP";
+  }
+
+  return normalized;
+}
+
+function createPassengerId() {
   return uniqueId("passenger");
 }
 
@@ -512,8 +569,32 @@ function normalizeSchedule(record: UnknownRecord): ScheduleSummary {
 }
 
 function normalizeTicketType(record: UnknownRecord): TicketTypeOption {
-  const name = pickString(record, ["name", "ticket_name", "label", "title"], "ตั๋วมาตรฐาน");
-  const passengerType = inferPassengerType(name);
+  const rawName = pickString(
+    record,
+    [
+      "name",
+      "ticket_name",
+      "ticket_type_name",
+      "type_name",
+      "display_name",
+      "displayName",
+      "ticket_label",
+      "label",
+      "title",
+      "ticket_type",
+      "type",
+      "category",
+      "ticket_category",
+    ],
+    "",
+  );
+  const rawDescription = pickString(
+    record,
+    ["description", "details", "remark", "ticket_description", "subtitle", "sub_title"],
+    "",
+  );
+  const passengerType = inferPassengerType(rawName || rawDescription || pickString(record, ["passenger_type", "passengerType", "type"], ""));
+  const name = formatTicketTypeLabel(rawName || rawDescription, passengerType);
   const isHighlight = /vip|premium/i.test(name);
   const benefits = pickStringArray(record, ["benefits", "features", "highlights"]);
 
@@ -522,7 +603,7 @@ function normalizeTicketType(record: UnknownRecord): TicketTypeOption {
     name,
     price: pickNumber(record, ["price", "unit_price", "fare", "amount"], 0),
     description:
-      pickString(record, ["description", "details", "remark"]) ||
+      rawDescription ||
       (passengerType === "child" ? "เหมาะสำหรับผู้โดยสารเด็ก" : "เหมาะสำหรับผู้โดยสารทั่วไป"),
     benefits: benefits.length > 0 ? benefits : ["สิทธิ์ขึ้นเรือตามรอบที่เลือก"],
     passengerType,
@@ -539,7 +620,123 @@ function normalizeAuthUserRecord(record: UnknownRecord | null, fallback: Partial
       "ผู้ใช้งาน",
     phone: pickString(record, ["phone", "phone_number", "mobile"], fallback.phone ?? ""),
     email: pickString(record, ["email", "username"], fallback.email ?? ""),
+    profileImageUrl:
+      pickString(
+        record,
+        ["profile_image_url", "profile_image", "avatar_url", "avatar", "image_url", "image"],
+        fallback.profileImageUrl ?? "",
+      ) || fallback.profileImageUrl,
+    accessToken:
+      pickString(record, ["access_token", "accessToken", "token", "jwt", "id_token"], fallback.accessToken ?? "") ||
+      fallback.accessToken,
     raw: record ?? fallback.raw,
+  };
+}
+
+async function loadImageSource(file: File) {
+  if (typeof createImageBitmap === "function") {
+    const bitmap = await createImageBitmap(file);
+
+    return {
+      source: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      cleanup: () => bitmap.close(),
+    };
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const nextImage = new Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error("โหลดรูปภาพไม่สำเร็จ"));
+      nextImage.src = objectUrl;
+    });
+
+    return {
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      cleanup: () => URL.revokeObjectURL(objectUrl),
+    };
+  } catch (error) {
+    URL.revokeObjectURL(objectUrl);
+    throw error;
+  }
+}
+
+async function prepareProfileImageFile(file: File) {
+  if (typeof document === "undefined" || !file.type.startsWith("image/")) {
+    return file;
+  }
+
+  const { source, width, height, cleanup } = await loadImageSource(file);
+
+  try {
+    const maxDimension = 1024;
+    const scale = Math.min(1, maxDimension / Math.max(width, height));
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement("canvas");
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return file;
+    }
+
+    context.drawImage(source, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", 0.86);
+    });
+
+    if (!blob) {
+      return file;
+    }
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "profile";
+
+    return new File([blob], `${baseName}.jpg`, {
+      type: blob.type,
+      lastModified: Date.now(),
+    });
+  } finally {
+    cleanup();
+  }
+}
+
+async function fileToBase64(file: File) {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("แปลงรูปภาพเป็น base64 ไม่สำเร็จ"));
+    };
+
+    reader.onerror = () => reject(new Error("อ่านไฟล์รูปภาพไม่สำเร็จ"));
+    reader.readAsDataURL(file);
+  });
+
+  const [, base64 = ""] = dataUrl.split(",", 2);
+
+  if (!base64) {
+    throw new Error("แปลงรูปภาพเป็น base64 ไม่สำเร็จ");
+  }
+
+  return {
+    dataUrl,
+    base64,
   };
 }
 
@@ -617,6 +814,67 @@ export async function loginUser(payload: { email: string; password: string }) {
 
   return normalizeAuthUserRecord(userRecord, {
     email: payload.email,
+    accessToken: extractAccessToken(response),
+    raw: response,
+  });
+}
+
+export async function forgotPassword(payload: { email: string }) {
+  const response = await apiRequest<unknown>("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  return {
+    message:
+      extractMessage(response) ?? "หากอีเมลนี้อยู่ในระบบ เราจะส่งลิงก์หรือรหัสสำหรับรีเซ็ตรหัสผ่านให้",
+    raw: response,
+  };
+}
+
+export async function resetPassword(payload: { token: string; password: string }) {
+  const response = await apiRequest<unknown>("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  return {
+    message: extractMessage(response) ?? "รีเซ็ตรหัสผ่านสำเร็จแล้ว",
+    raw: response,
+  };
+}
+
+export async function uploadProfileImage(file: File, currentUser?: AuthUser | null) {
+  const preparedFile = await prepareProfileImageFile(file);
+  const encodedImage = await fileToBase64(preparedFile);
+
+  const response = await apiRequest<unknown>("/api/auth/profile/image", {
+    method: "POST",
+    body: JSON.stringify({
+      image_base64: encodedImage.base64,
+      image_data_url: encodedImage.dataUrl,
+      mime_type: preparedFile.type || "image/jpeg",
+      file_name: preparedFile.name,
+    }),
+    headers: currentUser?.accessToken
+      ? {
+          Authorization: `Bearer ${currentUser.accessToken}`,
+        }
+      : undefined,
+  });
+  const userRecord =
+    findRecord(response, ["user", "customer", "account", "profile"]) ??
+    (isRecord(unwrapPayload(response)) ? (unwrapPayload(response) as UnknownRecord) : null);
+
+  return normalizeAuthUserRecord(userRecord, {
+    fullName: currentUser?.fullName,
+    phone: currentUser?.phone,
+    email: currentUser?.email,
+    profileImageUrl:
+      pickString(userRecord, ["profile_image_url", "profile_image", "avatar_url", "avatar", "image_url", "image"], "") ||
+      currentUser?.profileImageUrl,
+    accessToken: currentUser?.accessToken,
+    raw: response,
   });
 }
 

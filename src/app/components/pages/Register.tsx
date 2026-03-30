@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import { CheckCircle2, KeyRound, Mail, Phone, UserRound } from "lucide-react";
+import { KeyRound, Mail, Phone, UserRound } from "lucide-react";
 import { Link, useNavigate } from "@/lib/router";
 import { isValidEmail, isValidPhone, registerUser, sanitizePhone } from "@/lib/ferry";
 import { useAppContext } from "@/app/providers/AppProvider";
@@ -112,32 +112,6 @@ export function Register() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <section className={styles.hero}>
-          <div className={styles.eyebrow}>
-            <CheckCircle2 className="w-4 h-4" />
-            เริ่มต้นใช้งานในไม่กี่ขั้นตอน
-          </div>
-          <h1 className={styles.heroTitle}>สมัครสมาชิกเพื่อให้ขั้นตอนจองตั๋วง่ายขึ้น</h1>
-          <p className={styles.heroText}>
-            ระบบจะใช้ข้อมูลนี้ช่วยกรอกข้อมูลผู้จองในขั้นตอนจองตั๋ว และใช้สำหรับค้นหาตั๋วจากหมายเลขการจองภายหลัง
-          </p>
-
-          <ul className={styles.heroList}>
-            <li>
-              <CheckCircle2 className="w-4 h-4" />
-              ชื่อ-นามสกุล และเบอร์โทร จะถูกใช้เป็นข้อมูลติดต่อหลัก
-            </li>
-            <li>
-              <CheckCircle2 className="w-4 h-4" />
-              อีเมลจะถูกใช้กับ `login` และการค้นหาตั๋วตาม booking number
-            </li>
-            <li>
-              <CheckCircle2 className="w-4 h-4" />
-              ฟอร์มนี้เชื่อมกับ `POST /api/auth/register`
-            </li>
-          </ul>
-        </section>
-
         <section className={styles.card}>
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>Register</h2>
@@ -161,10 +135,9 @@ export function Register() {
                 autoComplete="name"
                 value={form.fullName}
                 onChange={(event) => setField("fullName", event.target.value)}
-                placeholder="Biza Demo"
+                placeholder="กรุณากรอกชื่อและนามสกุล"
                 className={`${styles.input} ${errors.fullName ? styles.inputError : ""}`}
               />
-              <div className={styles.helper}>ใช้ชื่อที่ต้องการให้ระบบแสดงในข้อมูลผู้จอง</div>
               {errors.fullName ? <div className={styles.error}>{errors.fullName}</div> : null}
             </div>
 
@@ -183,10 +156,9 @@ export function Register() {
                   autoComplete="tel"
                   value={form.phone}
                   onChange={(event) => setField("phone", event.target.value)}
-                  placeholder="0812345678"
+                  placeholder="กรอกเบอร์โทรศัพท์"
                   className={`${styles.input} ${errors.phone ? styles.inputError : ""}`}
                 />
-                <div className={styles.helper}>รองรับรูปแบบตัวเลข 9-10 หลัก</div>
                 {errors.phone ? <div className={styles.error}>{errors.phone}</div> : null}
               </div>
 
@@ -204,10 +176,9 @@ export function Register() {
                   autoComplete="email"
                   value={form.email}
                   onChange={(event) => setField("email", event.target.value)}
-                  placeholder="biza@example.com"
+                  placeholder="กรอกอีเมล"
                   className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
                 />
-                <div className={styles.helper}>ใช้อีเมลนี้สำหรับเข้าสู่ระบบในครั้งถัดไป</div>
                 {errors.email ? <div className={styles.error}>{errors.email}</div> : null}
               </div>
             </div>
@@ -230,7 +201,6 @@ export function Register() {
                   placeholder="อย่างน้อย 6 ตัวอักษร"
                   className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
                 />
-                <div className={styles.helper}>API ตัวอย่างต้องการฟิลด์ `password`</div>
                 {errors.password ? <div className={styles.error}>{errors.password}</div> : null}
               </div>
 
@@ -251,7 +221,6 @@ export function Register() {
                   placeholder="กรอกรหัสผ่านอีกครั้ง"
                   className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ""}`}
                 />
-                <div className={styles.helper}>ช่วยลดความผิดพลาดก่อนส่งข้อมูลจริง</div>
                 {errors.confirmPassword ? <div className={styles.error}>{errors.confirmPassword}</div> : null}
               </div>
             </div>
@@ -266,16 +235,6 @@ export function Register() {
             <Link href="/login" className={styles.inlineLink}>
               ไปหน้าเข้าสู่ระบบ
             </Link>
-          </div>
-
-          <div className={styles.summary}>
-            <h3 className={styles.summaryTitle}>ข้อมูลที่ต้องใช้</h3>
-            <ul className={styles.summaryList}>
-              <li>ชื่อ-นามสกุล</li>
-              <li>เบอร์โทรศัพท์</li>
-              <li>อีเมล</li>
-              <li>รหัสผ่าน</li>
-            </ul>
           </div>
         </section>
       </div>

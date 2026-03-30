@@ -7,12 +7,35 @@ import { useAppContext } from "@/app/providers/AppProvider";
 import { fetchSchedules, formatThaiDate, getHourFromTimeLabel } from "@/lib/ferry";
 import type { ScheduleSummary } from "@/lib/app-types";
 
+function parseScheduleDateTime(schedule: ScheduleSummary) {
+  const dateMatch = schedule.dateKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeSource = schedule.timeLabel || schedule.departureAt || "";
+  const timeMatch = timeSource.match(/^(\d{1,2}):(\d{2})/);
+
+  if (!dateMatch || !timeMatch) {
+    return null;
+  }
+
+  const parsedDate = new Date(
+    Number(dateMatch[1]),
+    Number(dateMatch[2]) - 1,
+    Number(dateMatch[3]),
+    Number(timeMatch[1]),
+    Number(timeMatch[2]),
+    0,
+    0,
+  );
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
 export function ScheduleResults() {
   const navigate = useNavigate();
   const { authUser, booking, setSelectedSchedule } = useAppContext();
   const [schedules, setSchedules] = useState<ScheduleSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     let ignore = false;
@@ -45,33 +68,60 @@ export function ScheduleResults() {
     };
   }, []);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 60 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   const filteredSchedules = useMemo(() => {
-    return schedules.filter((schedule) => {
-      if (schedule.dateKey !== booking.search.travelDate) {
-        return false;
-      }
+    return schedules
+      .filter((schedule) => {
+        if (schedule.dateKey !== booking.search.travelDate) {
+          return false;
+        }
 
-      if (booking.search.timeFilter === "all") {
-        return true;
-      }
+        if (booking.search.timeFilter === "all") {
+          return true;
+        }
 
-      const hour = getHourFromTimeLabel(schedule.timeLabel);
+        const hour = getHourFromTimeLabel(schedule.timeLabel);
 
-      if (hour === null) {
-        return true;
-      }
+        if (hour === null) {
+          return true;
+        }
 
-      if (booking.search.timeFilter === "morning") {
-        return hour < 12;
-      }
+        if (booking.search.timeFilter === "morning") {
+          return hour < 12;
+        }
 
-      if (booking.search.timeFilter === "afternoon") {
-        return hour >= 12 && hour < 17;
-      }
+        if (booking.search.timeFilter === "afternoon") {
+          return hour >= 12 && hour < 17;
+        }
 
-      return hour >= 17;
-    });
-  }, [booking.search.timeFilter, booking.search.travelDate, schedules]);
+        return hour >= 17;
+      })
+      .sort((left, right) => {
+        const leftDateTime = parseScheduleDateTime(left);
+        const rightDateTime = parseScheduleDateTime(right);
+        const leftClosed = leftDateTime ? now.getTime() >= leftDateTime.getTime() : false;
+        const rightClosed = rightDateTime ? now.getTime() >= rightDateTime.getTime() : false;
+
+        if (leftClosed !== rightClosed) {
+          return leftClosed ? 1 : -1;
+        }
+
+        if (leftDateTime && rightDateTime) {
+          return leftDateTime.getTime() - rightDateTime.getTime();
+        }
+
+        return left.timeLabel.localeCompare(right.timeLabel);
+      });
+  }, [booking.search.timeFilter, booking.search.travelDate, now, schedules]);
 
   return (
     <div className="booking-page">
@@ -105,18 +155,26 @@ export function ScheduleResults() {
         ) : (
           <div className="space-y-4 mb-24">
             {filteredSchedules.map((schedule) => {
+              const departureDateTime = parseScheduleDateTime(schedule);
+              const isClosed = departureDateTime ? now.getTime() >= departureDateTime.getTime() : false;
               const hasEnoughSeats = schedule.availableSeats >= booking.search.passengers;
-              const isAvailable = schedule.availableSeats > 0 && hasEnoughSeats;
+              const isAvailable = !isClosed && schedule.availableSeats > 0 && hasEnoughSeats;
               const percentage = schedule.totalSeats ? (schedule.availableSeats / schedule.totalSeats) * 100 : 100;
+              const statusLabel = isAvailable ? schedule.status : "ไม่พร้อมจอง";
+              const buttonLabel = isAvailable ? "เลือก" : "เต็ม";
 
               return (
                 <div
                   key={schedule.id}
                   className={`bg-white rounded-3xl p-6 shadow-sm border transition-all ${
-                    schedule.recommended ? "border-[#0EA5E9] shadow-lg" : "border-gray-100 hover:shadow-md"
-                  } ${!isAvailable ? "opacity-70" : ""}`}
+                    isClosed
+                      ? "border-gray-300 bg-slate-100 opacity-75"
+                      : schedule.recommended
+                        ? "border-[#0EA5E9] shadow-lg"
+                        : "border-gray-100 hover:shadow-md"
+                  } ${!isAvailable ? "grayscale-[0.15]" : ""}`}
                 >
-                  {schedule.recommended ? (
+                  {schedule.recommended && !isClosed ? (
                     <div className="flex items-center gap-2 mb-4 text-[#0EA5E9] text-sm">
                       <Star className="w-4 h-4 fill-current" />
                       <span>แนะนำ</span>
@@ -125,7 +183,7 @@ export function ScheduleResults() {
 
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <Clock className="w-6 h-6 text-[#0EA5E9]" />
+                      <Clock className={`w-6 h-6 ${isClosed ? "text-gray-400" : "text-[#0EA5E9]"}`} />
                       <div>
                         <div className="text-2xl">{schedule.timeLabel}</div>
                         <div className="text-sm text-gray-500">{schedule.dateLabel}</div>
@@ -133,7 +191,7 @@ export function ScheduleResults() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-2xl text-[#0EA5E9]">฿{schedule.price}</div>
+                      <div className={`text-2xl ${isClosed ? "text-gray-400" : "text-[#0EA5E9]"}`}>฿{schedule.price}</div>
                       <div className="text-xs text-gray-500">เริ่มต้นต่อคน</div>
                     </div>
                   </div>
@@ -150,7 +208,13 @@ export function ScheduleResults() {
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
-                          percentage > 50 ? "bg-green-500" : percentage > 20 ? "bg-orange-500" : "bg-red-500"
+                          isClosed
+                            ? "bg-gray-400"
+                            : percentage > 50
+                              ? "bg-green-500"
+                              : percentage > 20
+                                ? "bg-orange-500"
+                                : "bg-red-500"
                         }`}
                         style={{ width: `${Math.max(Math.min(percentage, 100), 0)}%` }}
                       />
@@ -160,41 +224,43 @@ export function ScheduleResults() {
                     ) : null}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-sm px-4 py-2 rounded-full ${
-                        isAvailable
-                          ? schedule.status === "ใกล้เต็ม"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {isAvailable ? schedule.status : "ไม่พร้อมจอง"}
-                    </span>
+                  {!isClosed ? (
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-sm px-4 py-2 rounded-full ${
+                          isAvailable
+                            ? schedule.status === "ใกล้เต็ม"
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {statusLabel}
+                      </span>
 
-                    <button
-                      onClick={() => {
-                        setSelectedSchedule(schedule);
+                      <button
+                        onClick={() => {
+                          setSelectedSchedule(schedule);
 
-                        if (!authUser) {
-                          navigate("/login?redirect=/select-ticket");
-                          return;
-                        }
+                          if (!authUser) {
+                            navigate("/login?redirect=/select-ticket");
+                            return;
+                          }
 
-                        navigate("/select-ticket");
-                      }}
-                      disabled={!isAvailable}
-                      className={`px-6 py-2 rounded-xl flex items-center gap-2 transition-all ${
-                        isAvailable
-                          ? "bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      }`}
-                    >
-                      <span>{isAvailable ? "เลือก" : "เต็ม"}</span>
-                      {isAvailable ? <ChevronRight className="w-4 h-4" /> : null}
-                    </button>
-                  </div>
+                          navigate("/select-ticket");
+                        }}
+                        disabled={!isAvailable}
+                        className={`px-6 py-2 rounded-xl flex items-center gap-2 transition-all ${
+                          isAvailable
+                            ? "bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        <span>{buttonLabel}</span>
+                        {isAvailable ? <ChevronRight className="w-4 h-4" /> : null}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

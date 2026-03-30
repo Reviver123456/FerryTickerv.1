@@ -7,14 +7,17 @@
 
 .container {
   width: 100%;
-  max-width: 72rem;
+  max-width: 48rem;
   margin: 0 auto;
   padding: 2rem 1rem 7rem;
   display: grid;
   gap: 1.5rem;
+  justify-items: center;
 }
 
 .hero {
+  width: 100%;
+  max-width: 40rem;
   border-radius: 2rem;
   padding: 2rem;
   color: #ffffff;
@@ -61,7 +64,37 @@
   font-size: 0.9375rem;
 }
 
+.loginHighlights {
+  margin-top: 1.75rem;
+  display: grid;
+  gap: 0.875rem;
+}
+
+.loginHighlightCard {
+  padding: 1rem 1.125rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.loginHighlightValue {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.loginHighlightLabel {
+  margin-top: 0.375rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
 .card {
+  width: 100%;
+  max-width: 40rem;
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 2rem;
@@ -170,6 +203,83 @@
   box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.12);
 }
 
+.inputShell {
+  display: flex;
+  align-items: center;
+  min-height: 3.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+  background: #ffffff;
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.inputShell:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+}
+
+.inputShellError {
+  border-color: #f87171;
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.12);
+}
+
+.inputWithAction {
+  flex: 1;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.875rem 1rem;
+  border: 0;
+  border-radius: 1rem;
+  background: transparent;
+}
+
+.inputWithAction:focus {
+  outline: none;
+}
+
+.inputAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 3.25rem;
+  border-left: 1px solid #e2e8f0;
+  color: #64748b;
+  background: transparent;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.inputAction:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus,
+.inputWithAction:-webkit-autofill,
+.inputWithAction:-webkit-autofill:hover,
+.inputWithAction:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a;
+  box-shadow: 0 0 0 1000px #dbeafe inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.inputShell:has(.inputWithAction:-webkit-autofill) {
+  background: #dbeafe;
+}
+
+.inputShell:has(.inputWithAction:-webkit-autofill) .inputAction {
+  background: #dbeafe;
+}
+
 .error {
   color: #dc2626;
   font-size: 0.8125rem;
@@ -241,8 +351,8 @@
 
 @media (min-width: 960px) {
   .container {
-    grid-template-columns: 1.05fr 0.95fr;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
     padding-top: 2.5rem;
     padding-bottom: 3rem;
   }
@@ -257,5 +367,9 @@
 
   .hero {
     padding: 2.5rem;
+  }
+
+  .loginHighlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

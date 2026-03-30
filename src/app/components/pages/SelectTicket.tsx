@@ -166,10 +166,6 @@ export function SelectTicket() {
           </p>
         </div>
 
-        <div className="info-banner mb-6">
-          ระบบจะส่งข้อมูลไปที่ `POST /api/bookings/draft` โดยใช้ `schedule_id`, `ticket_type_id`, `quantity` และ `unit_price`
-        </div>
-
         {error ? <div className="error-banner mb-6">{error}</div> : null}
 
         {isLoading ? (
@@ -206,7 +202,6 @@ export function SelectTicket() {
                           </span>
                         ) : null}
                       </div>
-                      <p className="text-sm text-gray-600">{type.description}</p>
                     </div>
                     <div className="text-right">
                       <div className="text-xl text-[#0EA5E9]">฿{type.price}</div>
@@ -272,7 +267,7 @@ export function SelectTicket() {
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <LoaderCircle className="w-4 h-4 animate-spin" />
-                    กำลังสร้าง draft
+                    กรุณารอสักครู่...
                   </span>
                 ) : (
                   "ถัดไป"

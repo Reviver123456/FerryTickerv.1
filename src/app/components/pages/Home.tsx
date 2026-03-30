@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Calendar, ChevronRight, Clock, HelpCircle, Users } from "lucide-react";
+import { Calendar, ChevronRight, Clock, Users } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { fetchSchedules, formatThaiDate, getTodayDateKey } from "@/lib/ferry";
@@ -138,10 +138,6 @@ export function Home() {
     pickerRef.current.setDate(travelDate);
   }, [travelDate]);
 
-  const promotions = [
-    { title: "ชำระง่ายผ่าน PromptPay QR", subtitle: "Flow การชำระเงินจริงเชื่อมกับ API แล้ว", image: "QR" },
-    { title: "ค้นหาตั๋วด้วย booking number", subtitle: "ใช้ booking_no และอีเมลเดิมเพื่อตรวจสอบตั๋ว", image: "BK" },
-  ];
   const activeTodayDateKey = todayDateKey || getTodayDateKey();
   const activeDateKey = travelDate || activeTodayDateKey;
   const searchedDateKey = displayedDateKey || activeTodayDateKey;
@@ -166,16 +162,6 @@ export function Home() {
       })
       .slice(0, 6);
   }, [activeTodayDateKey, allSchedules, searchedDateKey]);
-
-  const faqs = useMemo(
-    () => [
-      { q: "ต้องใช้อะไรบ้างในการค้นหาตั๋ว?", a: "ใช้หมายเลขการจอง (booking number) และอีเมลผู้จอง" },
-      { q: "สมัครสมาชิกแล้วช่วยอะไร?", a: "ระบบจะช่วยจำข้อมูลผู้จองและเติมให้ในขั้นตอนถัดไป" },
-      { q: "ถ้ายังไม่พบตั๋วหลังชำระเงินล่ะ?", a: "อาจต้องรอระบบยืนยันการชำระเงินหรือ webhook อัปเดตสถานะก่อน" },
-      { q: "API ใช้โดเมนอะไร?", a: "หน้าเว็บคุยกับ /api ของแอปนี้ และแอปจะ proxy ต่อไปที่ https://api-ferryticket.onrender.com" },
-    ],
-    [],
-  );
 
   return (
     <div className="booking-page">
@@ -280,6 +266,7 @@ export function Home() {
               displayedSchedules.map((schedule) => {
                 const hasEnoughSeats = schedule.availableSeats >= searchedPassengers;
                 const isAvailable = schedule.availableSeats > 0 && hasEnoughSeats;
+                const statusLabel = isAvailable ? "open" : "close";
 
                 return (
                   <button
@@ -312,14 +299,10 @@ export function Home() {
                     <div className="mb-3">
                       <span
                         className={`text-xs px-3 py-1 rounded-full ${
-                          schedule.status === "ว่าง"
-                            ? "bg-green-100 text-green-700"
-                            : schedule.status === "ใกล้เต็ม"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-gray-100 text-gray-500"
+                          isAvailable ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                         }`}
                       >
-                        {isAvailable ? schedule.status : "ไม่พร้อมจอง"}
+                        {statusLabel}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 mb-1">เหลือที่นั่ง {schedule.availableSeats}</div>

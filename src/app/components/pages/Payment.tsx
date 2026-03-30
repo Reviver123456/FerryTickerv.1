@@ -140,10 +140,6 @@ export function Payment() {
           </div>
         </div>
 
-        <div className="info-banner mb-6">
-          ระบบจะส่ง `booking_no`, `contact_email` และ `payment_method` ไปที่ `POST /api/payments`
-        </div>
-
         {error ? <div className="error-banner mb-6">{error}</div> : null}
 
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
