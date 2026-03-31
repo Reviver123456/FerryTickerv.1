@@ -19,7 +19,7 @@ function getTicketIcon(type: TicketTypeOption) {
 
 export function SelectTicket() {
   const navigate = useNavigate();
-  const { booking, setDraft, setSelectedTickets } = useAppContext();
+  const { authUser, booking, setDraft, setSelectedTickets } = useAppContext();
   const [ticketTypes, setTicketTypes] = useState<TicketTypeOption[]>([]);
   const [ticketCounts, setTicketCounts] = useState<TicketCounts>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -115,14 +115,17 @@ export function SelectTicket() {
     setError("");
 
     try {
-      const draft = await createBookingDraft({
-        schedule_id: booking.selectedSchedule.id,
-        items: selectedItems.map((item) => ({
-          ticket_type_id: item.ticketTypeId,
-          quantity: item.quantity,
-          unit_price: item.unitPrice,
-        })),
-      });
+      const draft = await createBookingDraft(
+        {
+          schedule_id: booking.selectedSchedule.id,
+          items: selectedItems.map((item) => ({
+            ticket_type_id: item.ticketTypeId,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+          })),
+        },
+        authUser,
+      );
 
       setSelectedTickets(selectedItems);
       setDraft({

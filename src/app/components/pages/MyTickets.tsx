@@ -36,7 +36,7 @@ function resolveDisplayValue(...values: Array<string | null | undefined>) {
 
 export function MyTickets() {
   const navigate = useNavigate();
-  const { booking, setLastLookup } = useAppContext();
+  const { authUser, booking, setLastLookup } = useAppContext();
   const [activeTab, setActiveTab] = useState<TicketTab>("unused");
   const hasResolvedInitialTab = useRef(false);
 
@@ -145,18 +145,29 @@ export function MyTickets() {
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
               <QrCode className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-lg mb-2">ยังไม่มีตั๋ว</h3>
+            <h3 className="text-lg mb-2">{authUser ? "ยังไม่มีตั๋ว" : "ยังไม่ได้เข้าสู่ระบบ"}</h3>
             <p className="text-gray-600 text-sm mb-6">
-              {activeTab === "unused"
-                ? "คุณยังไม่มีตั๋วที่จอง"
-                : "คุณยังไม่มีประวัติการใช้งาน"}
+              {authUser
+                ? activeTab === "unused"
+                  ? "ยังไม่พบตั๋วที่ผูกกับบัญชีนี้"
+                  : "ยังไม่พบประวัติการใช้งานของบัญชีนี้"
+                : "เข้าสู่ระบบเพื่อให้ระบบดึงตั๋วที่ซื้อไว้ของบัญชีนี้มาแสดงอัตโนมัติ"}
             </p>
-            {activeTab === "unused" && (
+            {authUser ? (
+              activeTab === "unused" && (
+                <button
+                  onClick={() => navigate("/")}
+                  className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg transition-shadow"
+                >
+                  จองตั๋วเลย
+                </button>
+              )
+            ) : (
               <button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/login?redirect=/my-tickets")}
                 className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg transition-shadow"
               >
-                จองตั๋วเลย
+                เข้าสู่ระบบ
               </button>
             )}
           </div>

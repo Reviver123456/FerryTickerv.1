@@ -136,15 +136,19 @@ export function PassengerInfo() {
         fullName: passenger.fullName.trim(),
       }));
 
-      await updateBookingInfo(booking.draft.bookingNo, {
-        contact_name: normalizedContact.fullName,
-        contact_phone: normalizedContact.phone,
-        contact_email: normalizedContact.email,
-        passengers: normalizedPassengers.map((passenger) => ({
-          full_name: passenger.fullName,
-          passenger_type: passenger.passengerType,
-        })),
-      });
+      await updateBookingInfo(
+        booking.draft.bookingNo,
+        {
+          contact_name: normalizedContact.fullName,
+          contact_phone: normalizedContact.phone,
+          contact_email: normalizedContact.email,
+          passengers: normalizedPassengers.map((passenger) => ({
+            full_name: passenger.fullName,
+            passenger_type: passenger.passengerType,
+          })),
+        },
+        authUser,
+      );
 
       setContact(normalizedContact);
       setPassengers(normalizedPassengers);

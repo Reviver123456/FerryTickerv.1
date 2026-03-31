@@ -1,5 +1,6 @@
 import type {
   AuthUser,
+  BookingHistoryRecord,
   BookingDraft,
   PassengerType,
   ScheduleSummary,
@@ -46,6 +47,21 @@ async function readJsonSafely(response: Response) {
   }
 }
 
+async function rawApiRequest(path: string, init?: RequestInit) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: buildRequestHeaders(init),
+    cache: "no-store",
+  });
+
+  const payload = await readJsonSafely(response);
+
+  return {
+    response,
+    payload,
+  };
+}
+
 function extractMessage(value: unknown): string | null {
   if (typeof value === "string" && value.trim()) {
     return value;
@@ -75,13 +91,7 @@ function extractMessage(value: unknown): string | null {
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: buildRequestHeaders(init),
-    cache: "no-store",
-  });
-
-  const payload = await readJsonSafely(response);
+  const { response, payload } = await rawApiRequest(path, init);
 
   if (!response.ok) {
     const message = extractMessage(payload) ?? `Request failed with status ${response.status}`;
@@ -633,6 +643,14 @@ function normalizeAuthUserRecord(record: UnknownRecord | null, fallback: Partial
   };
 }
 
+function buildAuthHeaders(currentUser?: Pick<AuthUser, "accessToken"> | null) {
+  return currentUser?.accessToken
+    ? {
+        Authorization: `Bearer ${currentUser.accessToken}`,
+      }
+    : undefined;
+}
+
 async function loadImageSource(file: File) {
   if (typeof createImageBitmap === "function") {
     const bitmap = await createImageBitmap(file);
@@ -779,6 +797,180 @@ function normalizeTicketRecord(record: UnknownRecord, fallback: Partial<TicketRe
   };
 }
 
+function formatDateLabelOrFallback(value?: string, fallback = "-") {
+  if (!value) {
+    return fallback;
+  }
+
+  return normalizeDateValue(value) ? formatThaiDate(value) : value || fallback;
+}
+
+function normalizeBookingHistoryRecord(
+  record: UnknownRecord,
+  fallback: Partial<BookingHistoryRecord> = {},
+): BookingHistoryRecord {
+  const contactRecord = findRecord(record, ["contact", "customer", "user", "account", "profile"]);
+  const bookingRecord = findRecord(record, ["booking"]);
+  const scheduleRecord = findRecord(record, ["schedule", "schedules", "trip", "route", "sailing"]);
+  const paymentRecord = findRecord(record, ["payment", "transaction", "payment_info"]);
+  const bookingItemRecords = extractArray(record, ["booking_items", "items"]);
+  const passengerRecords = extractArray(record, ["passengers", "passenger_list", "booking_passengers"]);
+  const passengerById = new Map(
+    passengerRecords.map((passengerRecord) => [
+      pickString(passengerRecord, ["id", "passenger_id"], uniqueId("passenger")),
+      passengerRecord,
+    ]),
+  );
+  const ticketTypeById = new Map(
+    bookingItemRecords.map((bookingItemRecord) => [
+      pickString(bookingItemRecord, ["ticket_type_id", "ticketTypeId"], uniqueId("ticket-type")),
+      findRecord(bookingItemRecord, ["ticket_types", "ticket_type", "ticketType"]),
+    ]),
+  );
+
+  const bookingNo =
+    pickString(record, ["booking_no", "bookingNo", "booking_number", "reference_no", "reference", "ref_no"], "") ||
+    pickString(bookingRecord, ["booking_no", "bookingNo", "booking_number", "reference_no", "reference", "ref_no"], "") ||
+    fallback.bookingNo ||
+    uniqueId("booking");
+  const scheduleDateSource =
+    pickString(record, ["travel_date", "schedule_date", "departure_date", "trip_date", "date"], "") ||
+    pickString(scheduleRecord, ["travel_date", "schedule_date", "departure_date", "trip_date", "departure_at", "date"], "") ||
+    fallback.scheduleDate ||
+    "";
+  const scheduleTimeSource =
+    pickString(record, ["travel_time", "departure_time", "time", "time_label"], "") ||
+    pickString(scheduleRecord, ["travel_time", "departure_time", "time", "departure_at", "time_label"], "") ||
+    fallback.scheduleTime ||
+    "";
+  const scheduleDate = formatDateLabelOrFallback(scheduleDateSource, fallback.scheduleDate ?? "-");
+  const scheduleTime = formatTimeLabel(scheduleTimeSource) || fallback.scheduleTime || "-";
+  const tickets = extractArray(record, ["tickets", "ticket_list", "booking_tickets", "issued_tickets"]).map((ticket) => {
+    const passengerId = pickString(ticket, ["passenger_id", "passengerId"], "");
+    const ticketTypeId = pickString(ticket, ["ticket_type_id", "ticketTypeId"], "");
+    const matchedPassenger = passengerId ? passengerById.get(passengerId) ?? null : null;
+    const matchedTicketType = ticketTypeId ? ticketTypeById.get(ticketTypeId) ?? null : null;
+    const ticketRecord =
+      matchedTicketType && isRecord(matchedTicketType)
+        ? {
+            ...ticket,
+            ticket_type_info: matchedTicketType,
+          }
+        : ticket;
+
+    return normalizeTicketRecord(ticketRecord, {
+      bookingNo,
+      passengerName:
+        pickString(matchedPassenger, ["full_name", "name"], "") ||
+        fallback.contactName ||
+        "ผู้โดยสาร",
+      passengerType: pickString(matchedPassenger, ["passenger_type", "type"], "adult"),
+      travelDate: scheduleDate,
+      travelTime: scheduleTime,
+      status: fallback.status ?? "confirmed",
+    });
+  });
+  const fallbackAmount =
+    fallback.totalAmount ??
+    tickets.length * pickNumber(scheduleRecord, ["price", "adult_price", "fare", "unit_price", "amount"], 0);
+
+  return {
+    bookingNo,
+    contactEmail:
+      pickString(record, ["contact_email", "email"], "") ||
+      pickString(contactRecord, ["email", "username"], fallback.contactEmail ?? "") ||
+      fallback.contactEmail ||
+      "",
+    contactName:
+      pickString(record, ["contact_name", "customer_name", "full_name", "name"], "") ||
+      pickString(contactRecord, ["full_name", "name", "display_name"], fallback.contactName ?? "") ||
+      fallback.contactName ||
+      "",
+    contactPhone:
+      pickString(record, ["contact_phone", "phone", "phone_number"], "") ||
+      pickString(contactRecord, ["phone", "phone_number", "mobile"], fallback.contactPhone ?? "") ||
+      fallback.contactPhone ||
+      "",
+    scheduleDate,
+    scheduleTime,
+    passengers:
+      pickNumber(record, ["passenger_count", "passengers", "total_passengers", "qty", "quantity"], 0) ||
+      fallback.passengers ||
+      tickets.length,
+    totalAmount: pickNumber(record, ["total_amount", "total", "amount", "grand_total", "payment_total"], fallbackAmount),
+    paymentMethod:
+      pickString(record, ["payment_method", "method"], "") ||
+      pickString(paymentRecord, ["payment_method", "method"], fallback.paymentMethod ?? "") ||
+      fallback.paymentMethod,
+    paymentRef:
+      pickString(record, ["payment_ref", "paymentRef", "transaction_ref", "reference"], "") ||
+      pickString(paymentRecord, ["payment_ref", "paymentRef", "transaction_ref", "reference"], fallback.paymentRef ?? "") ||
+      fallback.paymentRef,
+    status:
+      pickString(record, ["status", "booking_status"], "") ||
+      pickString(paymentRecord, ["status"], fallback.status ?? "") ||
+      fallback.status ||
+      (tickets.length > 0 ? "confirmed" : "pending"),
+    tickets: tickets.length > 0 ? tickets : fallback.tickets ?? [],
+    updatedAt:
+      pickString(record, ["updated_at", "updatedAt", "created_at", "createdAt", "booked_at", "booking_date"], "") ||
+      fallback.updatedAt ||
+      new Date().toISOString(),
+  };
+}
+
+function isBookingHistoryLikeRecord(record: UnknownRecord | null) {
+  if (!record) {
+    return false;
+  }
+
+  return [
+    "booking_no",
+    "bookingNo",
+    "booking_number",
+    "reference_no",
+    "reference",
+    "ref_no",
+    "tickets",
+    "ticket_list",
+    "booking_tickets",
+    "issued_tickets",
+    "travel_date",
+    "schedule_date",
+    "departure_date",
+    "contact_email",
+    "payment_ref",
+    "payment_method",
+  ].some((key) => record[key] !== undefined);
+}
+
+function extractBookingHistoryRecords(value: unknown) {
+  const listRecords = extractArray(value, [
+    "bookings",
+    "booking_history",
+    "history",
+    "reservations",
+    "orders",
+    "items",
+    "rows",
+    "data",
+  ]);
+
+  if (listRecords.length > 0) {
+    return listRecords;
+  }
+
+  const payload = unwrapPayload(value);
+  const directRecord = isRecord(payload) ? payload : null;
+  const nestedRecord =
+    findRecord(payload, ["booking", "reservation", "order", "trip", "sailing"]) ??
+    findRecord(payload, ["bookings", "reservations", "orders"]);
+
+  return [directRecord, nestedRecord].filter(
+    (record): record is UnknownRecord => isBookingHistoryLikeRecord(record),
+  );
+}
+
 export function getTicketQrImageUrl(ticket: Pick<TicketRecord, "qrImageUrl" | "raw">) {
   if (ticket.qrImageUrl) {
     return ticket.qrImageUrl;
@@ -856,11 +1048,7 @@ export async function uploadProfileImage(file: File, currentUser?: AuthUser | nu
       mime_type: preparedFile.type || "image/jpeg",
       file_name: preparedFile.name,
     }),
-    headers: currentUser?.accessToken
-      ? {
-          Authorization: `Bearer ${currentUser.accessToken}`,
-        }
-      : undefined,
+    headers: buildAuthHeaders(currentUser),
   });
   const userRecord =
     findRecord(response, ["user", "customer", "account", "profile"]) ??
@@ -888,10 +1076,14 @@ export async function fetchTicketTypes() {
   return extractArray(response, ["ticket_types", "items", "rows"]).map(normalizeTicketType);
 }
 
-export async function createBookingDraft(payload: { schedule_id: string; items: Array<{ ticket_type_id: string; quantity: number; unit_price: number }> }) {
+export async function createBookingDraft(
+  payload: { schedule_id: string; items: Array<{ ticket_type_id: string; quantity: number; unit_price: number }> },
+  currentUser?: AuthUser | null,
+) {
   const response = await apiRequest<unknown>("/api/bookings/draft", {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: buildAuthHeaders(currentUser),
   });
   const record =
     (isRecord(unwrapPayload(response)) ? (unwrapPayload(response) as UnknownRecord) : null) ??
@@ -913,6 +1105,36 @@ export async function createBookingDraft(payload: { schedule_id: string; items: 
   return bookingDraft;
 }
 
+export async function fetchMyBookings(currentUser?: Pick<AuthUser, "accessToken" | "email" | "fullName" | "phone"> | null) {
+  const { response, payload } = await rawApiRequest("/api/bookings/my", {
+    headers: buildAuthHeaders(currentUser),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404 || response.status === 405) {
+      return [] as BookingHistoryRecord[];
+    }
+
+    throw new Error(extractMessage(payload) ?? `Request failed with status ${response.status}`);
+  }
+
+  const records = extractBookingHistoryRecords(payload);
+
+  if (records.length === 0) {
+    return [] as BookingHistoryRecord[];
+  }
+
+  return records
+    .map((record) =>
+      normalizeBookingHistoryRecord(record, {
+        contactEmail: currentUser?.email,
+        contactName: currentUser?.fullName,
+        contactPhone: currentUser?.phone,
+      }),
+    )
+    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+}
+
 export async function updateBookingInfo(
   bookingNo: string,
   payload: {
@@ -921,10 +1143,12 @@ export async function updateBookingInfo(
     contact_email: string;
     passengers: Array<{ full_name: string; passenger_type: PassengerType }>;
   },
+  currentUser?: AuthUser | null,
 ) {
   return apiRequest<unknown>(`/api/bookings/${bookingNo}`, {
     method: "PUT",
     body: JSON.stringify(payload),
+    headers: buildAuthHeaders(currentUser),
   });
 }
 
@@ -932,10 +1156,11 @@ export async function createPayment(payload: {
   booking_no: string;
   contact_email: string;
   payment_method: string;
-}) {
+}, currentUser?: AuthUser | null) {
   const response = await apiRequest<unknown>("/api/payments", {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: buildAuthHeaders(currentUser),
   });
   const record =
     (isRecord(unwrapPayload(response)) ? (unwrapPayload(response) as UnknownRecord) : null) ??

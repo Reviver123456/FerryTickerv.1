@@ -307,11 +307,6 @@ export function Home() {
                     </div>
                     <div className="text-sm text-gray-600 mb-1">เหลือที่นั่ง {schedule.availableSeats}</div>
                     {!hasEnoughSeats ? <div className="text-xs text-orange-700 mb-2">ที่นั่งไม่พอสำหรับ {searchedPassengers} คน</div> : null}
-                    <div className="text-lg text-[#0EA5E9] mb-3">฿{schedule.price}</div>
-                    <div className={`text-sm flex items-center gap-1 ${isAvailable ? "text-[#0EA5E9]" : "text-gray-400"}`}>
-                      <span>{isAvailable ? "เลือกตั๋วรอบนี้" : "เลือกรอบอื่น"}</span>
-                      {isAvailable ? <ChevronRight className="w-4 h-4" /> : null}
-                    </div>
                   </button>
                 );
               })

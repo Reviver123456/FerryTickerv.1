@@ -8,7 +8,7 @@ import { createPayment, formatCurrency } from "@/lib/ferry";
 
 export function Payment() {
   const navigate = useNavigate();
-  const { booking, addRecentBooking, setPayment } = useAppContext();
+  const { authUser, booking, addRecentBooking, setPayment } = useAppContext();
   const [selectedMethod, setSelectedMethod] = useState("qr_promptpay");
   const [timeLeft, setTimeLeft] = useState(600);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,11 +70,14 @@ export function Payment() {
     setError("");
 
     try {
-      const payment = await createPayment({
-        booking_no: booking.draft.bookingNo,
-        contact_email: booking.contact.email,
-        payment_method: selectedMethod,
-      });
+      const payment = await createPayment(
+        {
+          booking_no: booking.draft.bookingNo,
+          contact_email: booking.contact.email,
+          payment_method: selectedMethod,
+        },
+        authUser,
+      );
 
       setPayment(payment);
       addRecentBooking({

@@ -15,7 +15,7 @@ import type {
   SelectedTicketItem,
   TicketLookupResult,
 } from "@/lib/app-types";
-import { createDefaultPassenger, createEmptyContactInfo, getTodayDateKey } from "@/lib/ferry";
+import { createDefaultPassenger, createEmptyContactInfo, fetchMyBookings, getTodayDateKey } from "@/lib/ferry";
 
 type AppContextValue = {
   authUser: AuthUser | null;
@@ -99,6 +99,15 @@ function syncPassengers(existing: PassengerForm[], count: number) {
   ];
 }
 
+function mergeRecentBookings(localBookings: BookingHistoryRecord[], remoteBookings: BookingHistoryRecord[]) {
+  const merged = [...remoteBookings, ...localBookings];
+  const deduped = merged.filter(
+    (record, index) => merged.findIndex((candidate) => candidate.bookingNo === record.bookingNo) === index,
+  );
+
+  return deduped.sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUserState] = useState<AuthUser | null>(null);
   const [booking, setBooking] = useState<BookingState>(() => createDefaultBookingState());
@@ -154,6 +163,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     window.localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(booking));
   }, [booking, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated || !authUser) {
+      return;
+    }
+
+    const currentUser = authUser;
+    let ignore = false;
+
+    async function loadRemoteBookings() {
+      try {
+        const remoteBookings = await fetchMyBookings(currentUser);
+
+        if (ignore) {
+          return;
+        }
+
+        setBooking((current) => ({
+          ...current,
+          recentBookings: mergeRecentBookings(current.recentBookings, remoteBookings),
+        }));
+      } catch {
+        // Keep local history as a fallback when the backend list endpoint is unavailable.
+      }
+    }
+
+    void loadRemoteBookings();
+
+    return () => {
+      ignore = true;
+    };
+  }, [authUser, isHydrated]);
 
   const value = useMemo<AppContextValue>(
     () => ({
