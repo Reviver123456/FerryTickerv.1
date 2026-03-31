@@ -102,9 +102,9 @@ export function Profile() {
     },
     {
       icon: Bell,
-      label: "ข่าวสาร",
-      description: "ดูโปรโมชั่นและประกาศล่าสุด",
-      action: () => navigate("/promotions"),
+      label: "แจ้งเตือน",
+      description: "ดูการแจ้งเตือนและประกาศล่าสุด",
+      action: () => navigate("/notifications"),
     },
     {
       icon: HelpCircle,

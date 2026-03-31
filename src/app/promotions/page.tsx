@@ -1,5 +1,5 @@
-import { Promotions } from "../components/pages/Promotions";
+import { redirect } from "next/navigation";
 
 export default function PromotionsPage() {
-  return <Promotions />;
+  redirect("/notifications");
 }

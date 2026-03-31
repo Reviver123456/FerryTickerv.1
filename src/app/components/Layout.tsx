@@ -35,7 +35,7 @@ export function Layout({ children }: LayoutProps) {
   const desktopItems: NavItem[] = [
     { href: "/", label: "หน้าแรก", paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"] },
     { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"] },
-    { href: "/promotions", label: "ข่าวสาร", paths: ["/promotions"] },
+    { href: "/notifications", label: "แจ้งเตือน", paths: ["/notifications", "/promotions"] },
     { href: "/help", label: "ช่วยเหลือ", paths: ["/help"] },
     ...(authUser
       ? []
@@ -47,7 +47,7 @@ export function Layout({ children }: LayoutProps) {
   const mobileItems = [
     { href: "/", label: "หน้าแรก", paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"], icon: Home },
     { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"], icon: FileText },
-    { href: "/promotions", label: "แจ้งเตือน", paths: ["/promotions"], icon: Bell },
+    { href: "/notifications", label: "แจ้งเตือน", paths: ["/notifications", "/promotions"], icon: Bell },
     {
       href: authUser ? "/profile" : "/login",
       label: authUser ? "โปรไฟล์" : "เข้าสู่ระบบ",

@@ -1,0 +1,299 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(191, 219, 254, 0.55), transparent 32%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+}
+
+.container {
+  width: 100%;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 7rem;
+}
+
+.actionsRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.deleteAllButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 2.625rem;
+  padding: 0.625rem 1.1rem;
+  border: 1px solid rgba(255, 59, 48, 0.14);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 244, 245, 0.98) 100%);
+  color: #ff3b30;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 24px -18px rgba(255, 59, 48, 0.45);
+}
+
+.deleteAllButton:hover {
+  border-color: rgba(255, 59, 48, 0.22);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 238, 240, 1) 100%);
+  color: #e2342b;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 14px 28px -18px rgba(255, 59, 48, 0.5);
+}
+
+.deleteAllButton:disabled {
+  border-color: rgba(203, 213, 225, 0.6);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(248, 250, 252, 0.92) 100%);
+  color: #94a3b8;
+  cursor: default;
+  box-shadow: none;
+}
+
+.listShell {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 28px 60px -42px rgba(15, 23, 42, 0.26);
+}
+
+.section + .section {
+  border-top: 1px solid #eef2f7;
+}
+
+.sectionHeader {
+  padding: 1rem 1.5rem;
+  background: rgba(248, 250, 252, 0.88);
+  border-bottom: 1px solid #eef2f7;
+}
+
+.sectionTitle {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.item + .item {
+  border-top: 1px solid #f8fafc;
+}
+
+.itemButton {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.itemButton:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.itemUnread {
+  background: linear-gradient(90deg, rgba(239, 246, 255, 0.9) 0%, rgba(255, 255, 255, 0) 55%);
+}
+
+.iconWrap {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 1rem;
+}
+
+.iconPayment {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.iconReminder {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.iconAccount {
+  background: #dbeafe;
+  color: #0284c7;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding-right: 1.5rem;
+}
+
+.topRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.itemTitle {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.itemTitleRead {
+  font-weight: 500;
+}
+
+.itemTime {
+  flex-shrink: 0;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.message {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.messageRead {
+  color: #64748b;
+}
+
+.messageAccent {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.unreadDotWrap {
+  position: absolute;
+  top: 50%;
+  right: 1.5rem;
+  transform: translateY(-50%);
+}
+
+.unreadDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #2563eb;
+  box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.12);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.emptyIcon {
+  display: inline-flex;
+  width: 4.5rem;
+  height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.5rem;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.emptyTitle {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.emptyMessage {
+  max-width: 24rem;
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.emptyAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.125rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 18px 36px -28px rgba(37, 99, 235, 0.72);
+}
+
+.footerHint {
+  margin-top: 1.5rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  text-align: center;
+  font-style: italic;
+}
+
+@media (max-width: 767px) {
+  .container {
+    padding-top: 1rem;
+  }
+
+  .itemButton {
+    padding-right: 1.25rem;
+  }
+
+  .content {
+    padding-right: 0;
+  }
+
+  .topRow {
+    flex-direction: column;
+  }
+
+  .itemTime {
+    white-space: normal;
+  }
+
+  .unreadDotWrap {
+    top: 1.5rem;
+    right: 1.25rem;
+    transform: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 2rem 1.5rem 3rem;
+  }
+}
