@@ -59,8 +59,8 @@ export function ResetPassword() {
 
     if (!form.password.trim()) {
       nextErrors.password = "กรุณากรอกรหัสผ่านใหม่";
-    } else if (form.password.length < 6) {
-      nextErrors.password = "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร";
+    } else if (form.password.length < 8) {
+      nextErrors.password = "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร";
     }
 
     if (!form.confirmPassword.trim()) {
@@ -119,7 +119,7 @@ export function ResetPassword() {
             </li>
             <li>
               <KeyRound className="w-4 h-4" />
-              ตรวจรหัสผ่านใหม่อย่างน้อย 6 ตัวอักษรก่อนส่ง
+              ตรวจรหัสผ่านใหม่อย่างน้อย 8 ตัวอักษรก่อนส่ง
             </li>
             <li>
               <CheckCircle2 className="w-4 h-4" />
@@ -173,7 +173,7 @@ export function ResetPassword() {
                   autoComplete="new-password"
                   value={form.password}
                   onChange={(event) => setField("password", event.target.value)}
-                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                  placeholder="อย่างน้อย 8 ตัวอักษร"
                   className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
                 />
                 <div className={styles.helper}>ใช้ค่า `password` เป็น payload หลักในการรีเซ็ต</div>

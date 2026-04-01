@@ -212,6 +212,24 @@ function pickString(source: UnknownRecord | null, keys: string[], fallback = "")
   return fallback;
 }
 
+function pickFullName(source: UnknownRecord | null, fallback = "") {
+  if (!source) {
+    return fallback;
+  }
+
+  const directFullName = pickString(source, ["full_name", "name", "customer_name", "display_name"], "");
+
+  if (directFullName) {
+    return directFullName;
+  }
+
+  const firstName = pickString(source, ["first_name", "firstname", "given_name"], "");
+  const lastName = pickString(source, ["last_name", "lastname", "family_name", "surname"], "");
+  const combinedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  return combinedName || fallback;
+}
+
 function extractAccessToken(value: unknown): string | undefined {
   const queue: unknown[] = [value];
   const seen = new Set<unknown>();
@@ -227,6 +245,45 @@ function extractAccessToken(value: unknown): string | undefined {
 
     if (isRecord(current)) {
       const token = pickString(current, ["access_token", "accessToken", "token", "jwt", "id_token"], "");
+
+      if (token) {
+        return token;
+      }
+
+      for (const nestedValue of Object.values(current)) {
+        if (isRecord(nestedValue) || Array.isArray(nestedValue)) {
+          queue.push(nestedValue);
+        }
+      }
+    }
+
+    if (Array.isArray(current)) {
+      for (const nestedValue of current) {
+        if (isRecord(nestedValue) || Array.isArray(nestedValue)) {
+          queue.push(nestedValue);
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function extractResetToken(value: unknown): string | undefined {
+  const queue: unknown[] = [value];
+  const seen = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    if (!current || seen.has(current)) {
+      continue;
+    }
+
+    seen.add(current);
+
+    if (isRecord(current)) {
+      const token = pickString(current, ["reset_token", "resetToken"], "");
 
       if (token) {
         return token;
@@ -582,6 +639,8 @@ function normalizeTicketType(record: UnknownRecord): TicketTypeOption {
   const rawName = pickString(
     record,
     [
+      "name_th",
+      "name_en",
       "name",
       "ticket_name",
       "ticket_type_name",
@@ -600,7 +659,7 @@ function normalizeTicketType(record: UnknownRecord): TicketTypeOption {
   );
   const rawDescription = pickString(
     record,
-    ["description", "details", "remark", "ticket_description", "subtitle", "sub_title"],
+    ["description", "benefit_text", "details", "remark", "ticket_description", "subtitle", "sub_title"],
     "",
   );
   const passengerType = inferPassengerType(rawName || rawDescription || pickString(record, ["passenger_type", "passengerType", "type"], ""));
@@ -611,11 +670,16 @@ function normalizeTicketType(record: UnknownRecord): TicketTypeOption {
   return {
     id: pickString(record, ["ticket_type_id", "id", "uuid"], uniqueId("ticket-type")),
     name,
-    price: pickNumber(record, ["price", "unit_price", "fare", "amount"], 0),
+    price: pickNumber(record, ["price", "unit_price", "fare", "amount", "base_price", "standard_price"], 0),
     description:
       rawDescription ||
       (passengerType === "child" ? "เหมาะสำหรับผู้โดยสารเด็ก" : "เหมาะสำหรับผู้โดยสารทั่วไป"),
-    benefits: benefits.length > 0 ? benefits : ["สิทธิ์ขึ้นเรือตามรอบที่เลือก"],
+    benefits:
+      benefits.length > 0
+        ? benefits
+        : rawDescription
+          ? [rawDescription]
+          : ["สิทธิ์ขึ้นเรือตามรอบที่เลือก"],
     passengerType,
     highlight: isHighlight,
     raw: record,
@@ -625,7 +689,7 @@ function normalizeTicketType(record: UnknownRecord): TicketTypeOption {
 function normalizeAuthUserRecord(record: UnknownRecord | null, fallback: Partial<AuthUser>): AuthUser {
   return {
     fullName:
-      pickString(record, ["full_name", "name", "customer_name", "display_name"], fallback.fullName ?? "") ||
+      pickFullName(record, fallback.fullName ?? "") ||
       fallback.email ||
       "ผู้ใช้งาน",
     phone: pickString(record, ["phone", "phone_number", "mobile"], fallback.phone ?? ""),
@@ -845,10 +909,13 @@ function normalizeBookingHistoryRecord(
     "";
   const scheduleDate = formatDateLabelOrFallback(scheduleDateSource, fallback.scheduleDate ?? "-");
   const scheduleTime = formatTimeLabel(scheduleTimeSource) || fallback.scheduleTime || "-";
-  const tickets = extractArray(record, ["tickets", "ticket_list", "booking_tickets", "issued_tickets"]).map((ticket) => {
+  const tickets = extractArray(record, ["tickets", "ticket_list", "booking_tickets", "issued_tickets"]).map((ticket, index) => {
     const passengerId = pickString(ticket, ["passenger_id", "passengerId"], "");
     const ticketTypeId = pickString(ticket, ["ticket_type_id", "ticketTypeId"], "");
-    const matchedPassenger = passengerId ? passengerById.get(passengerId) ?? null : null;
+    const matchedPassenger =
+      (passengerId ? passengerById.get(passengerId) ?? null : null) ??
+      passengerRecords[index] ??
+      null;
     const matchedTicketType = ticketTypeId ? ticketTypeById.get(ticketTypeId) ?? null : null;
     const ticketRecord =
       matchedTicketType && isRecord(matchedTicketType)
@@ -870,6 +937,11 @@ function normalizeBookingHistoryRecord(
       status: fallback.status ?? "confirmed",
     });
   });
+  const primaryPassengerName =
+    pickString(passengerRecords[0] ?? null, ["full_name", "name"], "") ||
+    tickets[0]?.passengerName ||
+    fallback.primaryPassengerName ||
+    "";
   const fallbackAmount =
     fallback.totalAmount ??
     tickets.length * pickNumber(scheduleRecord, ["price", "adult_price", "fare", "unit_price", "amount"], 0);
@@ -891,6 +963,7 @@ function normalizeBookingHistoryRecord(
       pickString(contactRecord, ["phone", "phone_number", "mobile"], fallback.contactPhone ?? "") ||
       fallback.contactPhone ||
       "",
+    primaryPassengerName,
     scheduleDate,
     scheduleTime,
     passengers:
@@ -1027,7 +1100,10 @@ export async function forgotPassword(payload: { email: string }) {
 export async function resetPassword(payload: { token: string; password: string }) {
   const response = await apiRequest<unknown>("/api/auth/reset-password", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      token: payload.token,
+      new_password: payload.password,
+    }),
   });
 
   return {
@@ -1036,11 +1112,64 @@ export async function resetPassword(payload: { token: string; password: string }
   };
 }
 
+export async function changePassword(
+  payload: { currentPassword: string; newPassword: string },
+  currentUser?: AuthUser | null,
+) {
+  if (!currentUser?.email) {
+    throw new Error("ไม่พบอีเมลของบัญชีนี้ กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ก่อน");
+  }
+
+  const { response: loginResponse, payload: loginPayload } = await rawApiRequest("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({
+      email: currentUser.email,
+      password: payload.currentPassword,
+    }),
+  });
+
+  if (!loginResponse.ok) {
+    if (loginResponse.status === 401 || loginResponse.status === 403) {
+      throw new Error("รหัสผ่านปัจจุบันไม่ถูกต้อง หรือสิทธิ์การเข้าสู่ระบบหมดอายุ");
+    }
+
+    throw new Error(extractMessage(loginPayload) ?? `Request failed with status ${loginResponse.status}`);
+  }
+
+  const forgotPasswordResponse = await apiRequest<unknown>("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({
+      email: currentUser.email,
+    }),
+  });
+  const resetToken = extractResetToken(forgotPasswordResponse);
+
+  if (!resetToken) {
+    return {
+      message: "ระบบได้ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว กรุณาเปิดอีเมลเพื่อยืนยันรหัสผ่านใหม่",
+      raw: forgotPasswordResponse,
+    };
+  }
+
+  const resetPasswordResponse = await apiRequest<unknown>("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({
+      token: resetToken,
+      new_password: payload.newPassword,
+    }),
+  });
+
+  return {
+    message: extractMessage(resetPasswordResponse) ?? "เปลี่ยนรหัสผ่านสำเร็จแล้ว",
+    raw: resetPasswordResponse,
+  };
+}
+
 export async function uploadProfileImage(file: File, currentUser?: AuthUser | null) {
   const preparedFile = await prepareProfileImageFile(file);
   const encodedImage = await fileToBase64(preparedFile);
 
-  const response = await apiRequest<unknown>("/api/auth/profile/image", {
+  const response = await apiRequest<unknown>("/api/auth/me/profile-image", {
     method: "POST",
     body: JSON.stringify({
       image_base64: encodedImage.base64,
@@ -1066,14 +1195,86 @@ export async function uploadProfileImage(file: File, currentUser?: AuthUser | nu
   });
 }
 
+export async function updateCurrentUser(
+  payload: { email?: string; phone?: string },
+  currentUser?: AuthUser | null,
+) {
+  const response = await apiRequest<unknown>("/api/auth/me", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+    headers: buildAuthHeaders(currentUser),
+  });
+  const userRecord =
+    findRecord(response, ["user", "customer", "account", "profile"]) ??
+    (isRecord(unwrapPayload(response)) ? (unwrapPayload(response) as UnknownRecord) : null);
+
+  return normalizeAuthUserRecord(userRecord, {
+    fullName: currentUser?.fullName,
+    phone: currentUser?.phone,
+    email: currentUser?.email,
+    profileImageUrl: currentUser?.profileImageUrl,
+    accessToken: currentUser?.accessToken,
+    raw: response,
+  });
+}
+
+export async function logoutCurrentUser(currentUser?: AuthUser | null) {
+  if (!currentUser?.accessToken) {
+    return {
+      loggedOut: true,
+    };
+  }
+
+  const response = await apiRequest<unknown>("/api/auth/logout", {
+    method: "POST",
+    headers: buildAuthHeaders(currentUser),
+  });
+
+  return {
+    loggedOut: true,
+    raw: response,
+  };
+}
+
 export async function fetchSchedules() {
   const response = await apiRequest<unknown>("/api/schedules");
   return extractArray(response, ["schedules", "items", "rows"]).map(normalizeSchedule);
 }
 
+async function fetchTicketTypePrice(ticketTypeId: string) {
+  const { response, payload } = await rawApiRequest(
+    `/api/prices/preview?ticket_type_id=${encodeURIComponent(ticketTypeId)}`,
+  );
+
+  if (!response.ok) {
+    return 0;
+  }
+
+  const priceRecord =
+    findRecord(payload, ["price", "preview"]) ??
+    (isRecord(unwrapPayload(payload)) ? (unwrapPayload(payload) as UnknownRecord) : null);
+
+  return pickNumber(priceRecord, ["amount", "standard_price", "price"], 0);
+}
+
 export async function fetchTicketTypes() {
   const response = await apiRequest<unknown>("/api/ticket-types");
-  return extractArray(response, ["ticket_types", "items", "rows"]).map(normalizeTicketType);
+  const ticketTypes = extractArray(response, ["ticket_types", "items", "rows"]).map(normalizeTicketType);
+
+  return Promise.all(
+    ticketTypes.map(async (ticketType) => {
+      if (ticketType.price > 0) {
+        return ticketType;
+      }
+
+      const previewPrice = await fetchTicketTypePrice(ticketType.id);
+
+      return {
+        ...ticketType,
+        price: previewPrice,
+      };
+    }),
+  );
 }
 
 export async function createBookingDraft(
@@ -1088,17 +1289,38 @@ export async function createBookingDraft(
   const record =
     (isRecord(unwrapPayload(response)) ? (unwrapPayload(response) as UnknownRecord) : null) ??
     findRecord(response, ["booking"]);
+  const draftItemRecords = extractArray(record ?? response, ["items", "booking_items", "ticket_type_summary"]);
+  const requestedItemsById = new Map(payload.items.map((item) => [item.ticket_type_id, item]));
 
   const bookingDraft: BookingDraft = {
     bookingNo: pickString(record, ["booking_no", "bookingNo", "id"], uniqueId("booking")),
     scheduleId: payload.schedule_id,
-    items: payload.items.map((item) => ({
-      ticketTypeId: item.ticket_type_id,
-      name: "",
-      unitPrice: item.unit_price,
-      quantity: item.quantity,
-      passengerType: "adult",
-    })),
+    items:
+      draftItemRecords.length > 0
+        ? draftItemRecords.map((itemRecord) => {
+            const ticketTypeRecord = findRecord(itemRecord, ["ticket_type", "ticket_types", "ticketType"]);
+            const ticketTypeId = pickString(itemRecord, ["ticket_type_id", "ticketTypeId", "id"], uniqueId("ticket-type"));
+            const requestedItem = requestedItemsById.get(ticketTypeId);
+            const rawName =
+              pickString(ticketTypeRecord, ["name_th", "name_en", "name", "code"], "") ||
+              pickString(itemRecord, ["name_th", "name_en", "name", "code"], "");
+            const passengerType = inferPassengerType(rawName);
+
+            return {
+              ticketTypeId,
+              name: formatTicketTypeLabel(rawName, passengerType),
+              unitPrice: pickNumber(itemRecord, ["unit_price", "price", "amount"], requestedItem?.unit_price ?? 0),
+              quantity: pickNumber(itemRecord, ["quantity", "qty"], requestedItem?.quantity ?? 0),
+              passengerType,
+            };
+          })
+        : payload.items.map((item) => ({
+            ticketTypeId: item.ticket_type_id,
+            name: "",
+            unitPrice: item.unit_price,
+            quantity: item.quantity,
+            passengerType: "adult",
+          })),
     raw: response,
   };
 
@@ -1106,7 +1328,7 @@ export async function createBookingDraft(
 }
 
 export async function fetchMyBookings(currentUser?: Pick<AuthUser, "accessToken" | "email" | "fullName" | "phone"> | null) {
-  const { response, payload } = await rawApiRequest("/api/bookings/my", {
+  const { response, payload } = await rawApiRequest("/api/bookings", {
     headers: buildAuthHeaders(currentUser),
   });
 
@@ -1179,18 +1401,20 @@ export async function createPayment(payload: {
 
 export async function fetchTicketsByBooking(bookingNo: string, contactEmail: string) {
   const response = await apiRequest<unknown>(
-    `/api/tickets/booking/${encodeURIComponent(bookingNo)}?contact_email=${encodeURIComponent(contactEmail)}`,
+    `/api/bookings/${encodeURIComponent(bookingNo)}?contact_email=${encodeURIComponent(contactEmail)}`,
   );
-  const tickets = extractArray(response, ["tickets", "items", "rows"]).map((ticket) =>
-    normalizeTicketRecord(ticket, {
-      bookingNo,
-    }),
-  );
+  const bookingRecord = extractBookingHistoryRecords(response)[0] ?? null;
+  const normalizedBooking = bookingRecord
+    ? normalizeBookingHistoryRecord(bookingRecord, {
+        bookingNo,
+        contactEmail,
+      })
+    : null;
 
   return {
-    bookingNo,
-    contactEmail,
-    tickets,
+    bookingNo: normalizedBooking?.bookingNo ?? bookingNo,
+    contactEmail: normalizedBooking?.contactEmail || contactEmail,
+    tickets: normalizedBooking?.tickets ?? [],
     raw: response,
   };
 }

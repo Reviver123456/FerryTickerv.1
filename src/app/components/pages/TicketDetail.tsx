@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
-import { formatCurrency, getTicketQrImageUrl } from "@/lib/ferry";
-import { findTicketViewBooking, getBookingStatusMeta } from "@/lib/ticket-view";
+import { fetchTicketsByBooking, formatCurrency, getTicketQrImageUrl } from "@/lib/ferry";
+import { findTicketViewBooking, findTicketViewBookingByBookingNo, getBookingStatusMeta } from "@/lib/ticket-view";
 import { QrCode, Calendar, Clock, User, Download, Share2, ChevronLeft, Printer } from "lucide-react";
 import type { TicketViewBooking } from "@/lib/ticket-view";
+import type { TicketRecord } from "@/lib/app-types";
 
 type TicketEntry = {
   ticketNo: string;
@@ -748,12 +749,62 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
   const navigate = useNavigate();
   const searchParams = useSearchParams();
   const { booking } = useAppContext();
+  const requestedBookingNo = searchParams.get("bookingNo");
+  const [remoteTickets, setRemoteTickets] = useState<TicketRecord[] | null>(null);
 
+  const baseBooking = useMemo(
+    () =>
+      (requestedBookingNo
+        ? findTicketViewBookingByBookingNo(booking, requestedBookingNo)
+        : null) ?? findTicketViewBooking(booking, Number(ticketId || "1")),
+    [booking, requestedBookingNo, ticketId],
+  );
   const activeBooking = useMemo(
-    () => findTicketViewBooking(booking, Number(ticketId || "1")),
-    [booking, ticketId],
+    () =>
+      baseBooking
+        ? {
+            ...baseBooking,
+            tickets: remoteTickets ?? baseBooking.tickets,
+          }
+        : null,
+    [baseBooking, remoteTickets],
   );
   const selectedTicketNo = searchParams.get("ticketNo");
+
+  useEffect(() => {
+    setRemoteTickets(null);
+  }, [baseBooking?.bookingNo]);
+
+  useEffect(() => {
+    if (!baseBooking?.bookingNo || !baseBooking.contactEmail) {
+      return;
+    }
+
+    const bookingNo = baseBooking.bookingNo;
+    const contactEmail = baseBooking.contactEmail;
+    let ignore = false;
+
+    async function refreshTickets() {
+      try {
+        const result = await fetchTicketsByBooking(bookingNo, contactEmail);
+
+        if (!ignore) {
+          setRemoteTickets(result.tickets);
+        }
+      } catch {
+        if (!ignore) {
+          setRemoteTickets(null);
+        }
+      }
+    }
+
+    void refreshTickets();
+
+    return () => {
+      ignore = true;
+    };
+  }, [baseBooking]);
+
   const ticketEntries = useMemo(
     () => (activeBooking ? buildTicketEntries(activeBooking) : []),
     [activeBooking],
@@ -773,6 +824,24 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
     () => (selectedTicketIndex >= 0 ? ticketEntries[selectedTicketIndex] ?? null : null),
     [selectedTicketIndex, ticketEntries],
   );
+  const fallbackLookupTicket = useMemo(() => {
+    if (!activeBooking || booking.lastLookup?.bookingNo !== activeBooking.bookingNo) {
+      return null;
+    }
+
+    if (selectedTicketNo) {
+      return booking.lastLookup.tickets.find((ticket) => ticket.ticketNo === selectedTicketNo) ?? null;
+    }
+
+    return booking.lastLookup.tickets[selectedTicketIndex] ?? null;
+  }, [activeBooking, booking.lastLookup, selectedTicketIndex, selectedTicketNo]);
+  const selectedPassengerFallback = useMemo(() => {
+    if (!activeBooking || booking.draft?.bookingNo !== activeBooking.bookingNo) {
+      return "";
+    }
+
+    return booking.passengers[selectedTicketIndex]?.fullName?.trim() || "";
+  }, [activeBooking, booking.draft?.bookingNo, booking.passengers, selectedTicketIndex]);
   const selectedTicketLabels = useMemo(
     () => expandSelectedTicketLabels(booking.selectedTickets),
     [booking.selectedTickets],
@@ -804,6 +873,57 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
     () => (selectedTicket ? { ...selectedTicket, ticketLabel: selectedTicketLabel } : null),
     [selectedTicket, selectedTicketLabel],
   );
+  const displayPassengerName = useMemo(() => {
+    if (!resolvedTicket || !activeBooking) {
+      return "-";
+    }
+
+    const ticketPassengerName = resolvedTicket.passengerName.trim();
+    const lookupPassengerName = fallbackLookupTicket?.passengerName?.trim() || "";
+    const primaryPassengerName = activeBooking.primaryPassengerName?.trim() || "";
+
+    if (ticketPassengerName && ticketPassengerName !== activeBooking.contactName) {
+      return ticketPassengerName;
+    }
+
+    if (lookupPassengerName && lookupPassengerName !== activeBooking.contactName) {
+      return lookupPassengerName;
+    }
+
+    if (primaryPassengerName && primaryPassengerName !== activeBooking.contactName) {
+      return primaryPassengerName;
+    }
+
+    if (selectedPassengerFallback) {
+      return selectedPassengerFallback;
+    }
+
+    return ticketPassengerName || activeBooking.contactName || "ผู้โดยสาร";
+  }, [activeBooking, fallbackLookupTicket?.passengerName, resolvedTicket, selectedPassengerFallback]);
+  const displayQrImageUrl = useMemo(
+    () => {
+      const hasIssuedTickets = (activeBooking?.tickets.length ?? 0) > 0;
+      const bookingStatus = activeBooking?.status.toLowerCase() ?? "";
+
+      if (!hasIssuedTickets || /pending|waiting|draft|expired|fail|cancel/.test(bookingStatus)) {
+        return undefined;
+      }
+
+      return resolvedTicket?.qrImageUrl || (fallbackLookupTicket ? getTicketQrImageUrl(fallbackLookupTicket) : undefined);
+    },
+    [activeBooking?.status, activeBooking?.tickets.length, fallbackLookupTicket, resolvedTicket?.qrImageUrl],
+  );
+  const displayTicket = useMemo(
+    () =>
+      resolvedTicket
+        ? {
+            ...resolvedTicket,
+            passengerName: displayPassengerName,
+            qrImageUrl: displayQrImageUrl,
+          }
+        : null,
+    [displayPassengerName, displayQrImageUrl, resolvedTicket],
+  );
   const issuedDateLabel = useMemo(
     () => formatIssuedDate(activeBooking?.updatedAt),
     [activeBooking?.updatedAt],
@@ -832,57 +952,41 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
   );
 
   const statusMeta = useMemo(() => {
-    if (!activeBooking || !resolvedTicket) {
+    if (!activeBooking) {
       return null;
     }
 
-    return getBookingStatusMeta({
-      status: resolvedTicket.status,
-      tickets: [
-        {
-          ticketNo: resolvedTicket.ticketNo,
-          qrToken: resolvedTicket.qrToken,
-          qrImageUrl: resolvedTicket.qrImageUrl,
-          passengerName: resolvedTicket.passengerName,
-          passengerType: resolvedTicket.passengerType,
-          status: resolvedTicket.status,
-          bookingNo: activeBooking.bookingNo,
-          travelDate: resolvedTicket.travelDate,
-          travelTime: resolvedTicket.travelTime,
-          raw: undefined,
-        },
-      ],
-    });
-  }, [activeBooking, resolvedTicket]);
+    return getBookingStatusMeta(activeBooking);
+  }, [activeBooking]);
 
   const handleDownload = () => {
-    if (!activeBooking || !resolvedTicket || !statusMeta) {
+    if (!activeBooking || !displayTicket || !statusMeta) {
       return;
     }
 
     const documentHtml = buildTicketDocument(
       activeBooking,
-      resolvedTicket,
+      displayTicket,
       displayTravelDate,
       displayTravelTime,
       selectedTicketUnitPrice,
     );
     void downloadTicketAsImage({
-      fileBaseName: resolvedTicket.ticketNo || activeBooking.bookingNo,
-      ticketNo: resolvedTicket.ticketNo,
-      passengerName: resolvedTicket.passengerName,
+      fileBaseName: displayTicket.ticketNo || activeBooking.bookingNo,
+      ticketNo: displayTicket.ticketNo,
+      passengerName: displayTicket.passengerName,
       passengerTypeLabel,
       displayTravelDate,
       displayTravelTime,
       ticketUnitPrice: selectedTicketUnitPrice,
       issuedDateLabel,
-      qrImageUrl: resolvedTicket.qrImageUrl,
+      qrImageUrl: displayTicket.qrImageUrl,
     }).catch(() => {
       const blob = new Blob([documentHtml], { type: "text/html;charset=utf-8" });
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
-      anchor.download = `${resolvedTicket.ticketNo || activeBooking.bookingNo}.html`;
+      anchor.download = `${displayTicket.ticketNo || activeBooking.bookingNo}.html`;
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
@@ -891,13 +995,13 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
   };
 
   const handlePrint = () => {
-    if (!activeBooking || !resolvedTicket || !statusMeta) {
+    if (!activeBooking || !displayTicket || !statusMeta) {
       return;
     }
 
     const documentHtml = buildTicketDocument(
       activeBooking,
-      resolvedTicket,
+      displayTicket,
       displayTravelDate,
       displayTravelTime,
       selectedTicketUnitPrice,
@@ -918,32 +1022,32 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
   };
 
   const handleShare = async () => {
-    if (!activeBooking || !resolvedTicket || !statusMeta) {
+    if (!activeBooking || !displayTicket || !statusMeta) {
       return;
     }
 
-    const shareText = buildShareText(activeBooking, resolvedTicket);
+    const shareText = buildShareText(activeBooking, displayTicket);
 
     try {
       if (navigator.share) {
         const imageBlob = await createTicketImageBlob({
-          fileBaseName: resolvedTicket.ticketNo || activeBooking.bookingNo,
-          ticketNo: resolvedTicket.ticketNo,
-          passengerName: resolvedTicket.passengerName,
+          fileBaseName: displayTicket.ticketNo || activeBooking.bookingNo,
+          ticketNo: displayTicket.ticketNo,
+          passengerName: displayTicket.passengerName,
           passengerTypeLabel,
           displayTravelDate,
           displayTravelTime,
           ticketUnitPrice: selectedTicketUnitPrice,
           issuedDateLabel,
-          qrImageUrl: resolvedTicket.qrImageUrl,
+          qrImageUrl: displayTicket.qrImageUrl,
         });
-        const ticketFile = new File([imageBlob], `${resolvedTicket.ticketNo || activeBooking.bookingNo}.png`, {
+        const ticketFile = new File([imageBlob], `${displayTicket.ticketNo || activeBooking.bookingNo}.png`, {
           type: "image/png",
         });
 
         if (navigator.canShare?.({ files: [ticketFile] })) {
           await navigator.share({
-            title: `Ferry Ticket ${resolvedTicket.ticketNo || activeBooking.bookingNo}`,
+            title: `Ferry Ticket ${displayTicket.ticketNo || activeBooking.bookingNo}`,
             text: shareText,
             files: [ticketFile],
           });
@@ -951,7 +1055,7 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
         }
 
         await navigator.share({
-          title: `Ferry Ticket ${resolvedTicket.ticketNo || activeBooking.bookingNo}`,
+          title: `Ferry Ticket ${displayTicket.ticketNo || activeBooking.bookingNo}`,
           text: shareText,
         });
         return;
@@ -1013,9 +1117,9 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
 
           <div className="p-8">
             <div className="w-72 h-72 mx-auto bg-white border-4 border-gray-100 rounded-3xl flex items-center justify-center mb-6 shadow-inner overflow-hidden">
-              {resolvedTicket.qrImageUrl ? (
+              {displayQrImageUrl ? (
                 <img
-                  src={resolvedTicket.qrImageUrl}
+                  src={displayQrImageUrl}
                   alt={`QR ของ ${resolvedTicket.ticketNo}`}
                   className="w-56 h-56 object-contain"
                 />
@@ -1040,7 +1144,7 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
                 <User className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <div className="text-sm">{resolvedTicket.passengerName}</div>
+                <div className="text-sm">{displayTicket?.passengerName || displayPassengerName}</div>
                 <div className="text-xs text-gray-600">{passengerTypeLabel}</div>
               </div>
             </div>

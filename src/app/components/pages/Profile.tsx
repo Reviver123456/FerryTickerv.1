@@ -7,6 +7,7 @@ import {
   Calendar,
   ChevronRight,
   HelpCircle,
+  KeyRound,
   LogOut,
   Mail,
   Phone,
@@ -17,7 +18,17 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
-import { uploadProfileImage } from "@/lib/ferry";
+import {
+  changePassword,
+  isValidEmail,
+  isValidPhone,
+  logoutCurrentUser,
+  sanitizePhone,
+  updateCurrentUser,
+  uploadProfileImage,
+} from "@/lib/ferry";
+
+type EditableProfileField = "email" | "phone" | null;
 
 function isUsedTicketStatus(status: string) {
   return /used|validated|scanned|boarded|completed/i.test(status);
@@ -25,7 +36,7 @@ function isUsedTicketStatus(status: string) {
 
 export function Profile() {
   const navigate = useNavigate();
-  const { authUser, booking, logout, resetCurrentBooking, setAuthUser } = useAppContext();
+  const { authUser, booking, logout, resetCurrentBooking, setAuthUser, setContact } = useAppContext();
   const allTickets = booking.recentBookings.flatMap((record) => record.tickets);
   const totalUsedTickets = allTickets.filter((ticket) => isUsedTicketStatus(ticket.status)).length;
   const totalUnusedTickets = allTickets.length - totalUsedTickets;
@@ -33,6 +44,22 @@ export function Profile() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageError, setImageError] = useState("");
   const [imageMessage, setImageMessage] = useState("");
+  const [editingField, setEditingField] = useState<EditableProfileField>(null);
+  const [contactDrafts, setContactDrafts] = useState({
+    email: "",
+    phone: "",
+  });
+  const [contactError, setContactError] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
 
   if (!authUser) {
     return (
@@ -169,6 +196,201 @@ export function Profile() {
     profileImageInputRef.current?.click();
   };
 
+  const startEditingField = (field: Exclude<EditableProfileField, null>) => {
+    setEditingField(field);
+    setContactError("");
+    setContactMessage("");
+    setContactDrafts((current) => ({
+      ...current,
+      [field]: authUser[field] ?? "",
+    }));
+  };
+
+  const cancelEditingField = () => {
+    setEditingField(null);
+    setContactError("");
+  };
+
+  const syncBookingContactField = (field: "email" | "phone", previousValue: string, nextValue: string) => {
+    const currentValue = booking.contact[field];
+
+    if (currentValue && currentValue !== previousValue) {
+      return;
+    }
+
+    setContact({
+      ...booking.contact,
+      fullName: booking.contact.fullName || authUser.fullName,
+      [field]: nextValue,
+    });
+  };
+
+  const saveEditingField = async (field: Exclude<EditableProfileField, null>) => {
+    setContactError("");
+    setContactMessage("");
+
+    if (!authUser.accessToken) {
+      setContactError("กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ก่อนแก้ไขข้อมูล");
+      return;
+    }
+
+    if (field === "email") {
+      const nextEmail = contactDrafts.email.trim();
+
+      if (!nextEmail) {
+        setContactError("กรุณากรอกอีเมล");
+        return;
+      }
+
+      if (!isValidEmail(nextEmail)) {
+        setContactError("รูปแบบอีเมลไม่ถูกต้อง");
+        return;
+      }
+
+      if (nextEmail === authUser.email) {
+        setEditingField(null);
+        return;
+      }
+
+      try {
+        const updatedUser = await updateCurrentUser(
+          {
+            email: nextEmail,
+          },
+          authUser,
+        );
+
+        setAuthUser(updatedUser);
+        syncBookingContactField("email", authUser.email, updatedUser.email);
+        setEditingField(null);
+        setContactMessage("อัปเดตอีเมลเรียบร้อยแล้ว");
+      } catch (error) {
+        setContactError(error instanceof Error ? error.message : "ไม่สามารถอัปเดตอีเมลได้");
+      }
+
+      return;
+    }
+
+    const nextPhone = sanitizePhone(contactDrafts.phone);
+
+    if (!nextPhone) {
+      setContactError("กรุณากรอกเบอร์โทรศัพท์");
+      return;
+    }
+
+    if (!isValidPhone(nextPhone)) {
+      setContactError("เบอร์โทรศัพท์ควรมี 9-10 หลัก");
+      return;
+    }
+
+    if (nextPhone === authUser.phone) {
+      setEditingField(null);
+      return;
+    }
+
+    try {
+      const updatedUser = await updateCurrentUser(
+        {
+          phone: nextPhone,
+        },
+        authUser,
+      );
+
+      setAuthUser(updatedUser);
+      syncBookingContactField("phone", authUser.phone, updatedUser.phone);
+      setEditingField(null);
+      setContactMessage("อัปเดตเบอร์โทรเรียบร้อยแล้ว");
+    } catch (error) {
+      setContactError(error instanceof Error ? error.message : "ไม่สามารถอัปเดตเบอร์โทรศัพท์ได้");
+    }
+  };
+
+  const openForgotPasswordFlow = () => {
+    const params = new URLSearchParams();
+
+    if (authUser.email) {
+      params.set("email", authUser.email);
+    }
+
+    params.set("from", "profile");
+    navigate(`/forgot-password?${params.toString()}`);
+  };
+
+  const startPasswordChange = () => {
+    setIsEditingPassword(true);
+    setPasswordError("");
+    setPasswordMessage("");
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  };
+
+  const cancelPasswordChange = () => {
+    setIsEditingPassword(false);
+    setPasswordError("");
+  };
+
+  const submitPasswordChange = async () => {
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (!passwordForm.currentPassword.trim()) {
+      setPasswordError("กรุณากรอกรหัสผ่านปัจจุบัน");
+      return;
+    }
+
+    if (!passwordForm.newPassword.trim()) {
+      setPasswordError("กรุณากรอกรหัสผ่านใหม่");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError("รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร");
+      return;
+    }
+
+    if (!passwordForm.confirmPassword.trim()) {
+      setPasswordError("กรุณายืนยันรหัสผ่านใหม่");
+      return;
+    }
+
+    if (passwordForm.confirmPassword !== passwordForm.newPassword) {
+      setPasswordError("รหัสผ่านใหม่และการยืนยันไม่ตรงกัน");
+      return;
+    }
+
+    if (!authUser.accessToken) {
+      setPasswordError("กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ก่อนเปลี่ยนรหัสผ่าน");
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const result = await changePassword(
+        {
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        },
+        authUser,
+      );
+
+      setPasswordMessage(result.message);
+      setIsEditingPassword(false);
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : "ไม่สามารถเปลี่ยนรหัสผ่านได้");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   return (
     <div className="booking-page">
       <div className="booking-page__container booking-page__container--sm">
@@ -248,22 +470,248 @@ export function Profile() {
         </div>
 
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
-          <h2 className="text-lg mb-4">ข้อมูลติดต่อ</h2>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <h2 className="text-lg">ข้อมูลติดต่อ</h2>
+            {contactMessage ? <div className="text-xs text-green-600">{contactMessage}</div> : null}
+          </div>
+
+          {contactError ? (
+            <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {contactError}
+            </div>
+          ) : null}
 
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50">
-              <Mail className="w-5 h-5 text-[#0EA5E9]" />
-              <div className="flex-1">
-                <div className="text-xs text-gray-600">อีเมล</div>
-                <div className="text-sm">{authUser.email || "-"}</div>
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-[#0EA5E9] mt-1" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs text-gray-600">อีเมล</div>
+                      {editingField === "email" ? (
+                        <input
+                          type="email"
+                          autoComplete="email"
+                          value={contactDrafts.email}
+                          onChange={(event) =>
+                            setContactDrafts((current) => ({
+                              ...current,
+                              email: event.target.value,
+                            }))
+                          }
+                          placeholder="กรอกอีเมล"
+                          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0EA5E9]"
+                        />
+                      ) : (
+                        <div className="text-sm break-all">{authUser.email || "-"}</div>
+                      )}
+                    </div>
+
+                    {editingField === "email" ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => saveEditingField("email")}
+                          className="rounded-2xl border border-[#0EA5E9] bg-[#0EA5E9] px-5 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:border-[#0284C7] hover:bg-[#0284C7]"
+                        >
+                          บันทึก
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditingField}
+                          className="rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-700"
+                        >
+                          ยกเลิก
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => startEditingField("email")}
+                        className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
+                      >
+                        แก้ไข
+                      </button>
+                    )}
+                  </div>
+
+                  {editingField === "email" ? (
+                    <div className="mt-2 text-xs text-gray-500">อีเมลนี้จะถูกใช้เป็นค่าเริ่มต้นตอนจองและใช้ค้นหาตั๋ว</div>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50">
-              <Phone className="w-5 h-5 text-[#0EA5E9]" />
-              <div className="flex-1">
-                <div className="text-xs text-gray-600">เบอร์โทร</div>
-                <div className="text-sm">{authUser.phone || "-"}</div>
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="flex items-start gap-3">
+                <Phone className="w-5 h-5 text-[#0EA5E9] mt-1" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs text-gray-600">เบอร์โทร</div>
+                      {editingField === "phone" ? (
+                        <input
+                          type="tel"
+                          autoComplete="tel"
+                          value={contactDrafts.phone}
+                          onChange={(event) =>
+                            setContactDrafts((current) => ({
+                              ...current,
+                              phone: event.target.value,
+                            }))
+                          }
+                          placeholder="กรอกเบอร์โทรศัพท์"
+                          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0EA5E9]"
+                        />
+                      ) : (
+                        <div className="text-sm">{authUser.phone || "-"}</div>
+                      )}
+                    </div>
+
+                    {editingField === "phone" ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => saveEditingField("phone")}
+                          className="rounded-2xl border border-[#0EA5E9] bg-[#0EA5E9] px-5 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:border-[#0284C7] hover:bg-[#0284C7]"
+                        >
+                          บันทึก
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditingField}
+                          className="rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-700"
+                        >
+                          ยกเลิก
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => startEditingField("phone")}
+                        className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
+                      >
+                        แก้ไข
+                      </button>
+                    )}
+                  </div>
+
+                  {editingField === "phone" ? (
+                    <div className="mt-2 text-xs text-gray-500">ระบบจะบันทึกเฉพาะตัวเลข 9-10 หลักตามรูปแบบเดิมของแอป</div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="flex items-start gap-3">
+                <KeyRound className="w-5 h-5 text-[#0EA5E9] mt-1" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs text-gray-600">รหัสผ่าน</div>
+                      <div className="text-sm">••••••••</div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        เปลี่ยนได้ทันทีด้วยรหัสปัจจุบัน หรือกดรีเซ็ตทางอีเมลเมื่อจำรหัสไม่ได้
+                      </div>
+                    </div>
+
+                    {!isEditingPassword ? (
+                      <button
+                        type="button"
+                        onClick={startPasswordChange}
+                        className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
+                      >
+                        เปลี่ยน
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {passwordMessage ? <div className="mt-3 text-sm text-green-600">{passwordMessage}</div> : null}
+                  {passwordError ? <div className="mt-3 text-sm text-red-600">{passwordError}</div> : null}
+
+                  {isEditingPassword ? (
+                    <div className="mt-4 space-y-3">
+                      <input
+                        type="password"
+                        autoComplete="current-password"
+                        value={passwordForm.currentPassword}
+                        onChange={(event) =>
+                          setPasswordForm((current) => ({
+                            ...current,
+                            currentPassword: event.target.value,
+                          }))
+                        }
+                        placeholder="รหัสผ่านปัจจุบัน"
+                        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0EA5E9]"
+                      />
+
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={passwordForm.newPassword}
+                        onChange={(event) =>
+                          setPasswordForm((current) => ({
+                            ...current,
+                            newPassword: event.target.value,
+                          }))
+                        }
+                        placeholder="รหัสผ่านใหม่"
+                        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0EA5E9]"
+                      />
+
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(event) =>
+                          setPasswordForm((current) => ({
+                            ...current,
+                            confirmPassword: event.target.value,
+                          }))
+                        }
+                        placeholder="ยืนยันรหัสผ่านใหม่"
+                        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#0EA5E9]"
+                      />
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={submitPasswordChange}
+                          disabled={isChangingPassword}
+                          className="px-4 py-2 rounded-xl bg-[#0EA5E9] text-white text-sm disabled:opacity-60"
+                        >
+                          {isChangingPassword ? "กำลังบันทึก..." : "บันทึกรหัสผ่านใหม่"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelPasswordChange}
+                          disabled={isChangingPassword}
+                          className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 disabled:opacity-60"
+                        >
+                          ยกเลิก
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openForgotPasswordFlow}
+                          disabled={isChangingPassword}
+                          className="text-sm text-[#0EA5E9] hover:text-[#2563EB] disabled:opacity-60"
+                        >
+                          ลืมรหัสผ่าน? รีเซ็ตทางอีเมล
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={openForgotPasswordFlow}
+                      className="mt-3 text-sm text-[#0EA5E9] hover:text-[#2563EB]"
+                    >
+                      ลืมรหัสผ่าน? รีเซ็ตทางอีเมล
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -294,7 +742,13 @@ export function Profile() {
         </div>
 
         <button
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await logoutCurrentUser(authUser);
+            } catch {
+              // Local sign-out should still succeed even if the API call fails.
+            }
+
             logout();
             navigate("/login");
           }}

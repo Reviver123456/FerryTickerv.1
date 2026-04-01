@@ -85,6 +85,7 @@ export function Payment() {
         contactEmail: booking.contact.email,
         contactName: booking.contact.fullName,
         contactPhone: booking.contact.phone,
+        primaryPassengerName: booking.passengers[0]?.fullName || "",
         scheduleDate: booking.selectedSchedule?.dateLabel ?? "-",
         scheduleTime: booking.selectedSchedule?.timeLabel ?? "-",
         passengers: booking.passengers.length,

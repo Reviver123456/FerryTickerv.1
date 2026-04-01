@@ -99,6 +99,7 @@ export type BookingHistoryRecord = {
   contactEmail: string;
   contactName: string;
   contactPhone: string;
+  primaryPassengerName?: string;
   scheduleDate: string;
   scheduleTime: string;
   passengers: number;

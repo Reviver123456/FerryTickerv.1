@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail } from "lucide-react";
 import { Link } from "@/lib/router";
 import { forgotPassword, isValidEmail } from "@/lib/ferry";
@@ -17,6 +17,28 @@ export function ForgotPassword() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const presetEmail = params.get("email");
+
+    if (presetEmail) {
+      setEmail(presetEmail);
+    }
+
+    if (params.get("from") === "profile") {
+      setInfoMessage(
+        presetEmail
+          ? "ยืนยันอีเมลแล้ว กดส่งคำขอเพื่อรับลิงก์เปลี่ยนรหัสผ่านได้เลย"
+          : "กรอกอีเมลของบัญชีนี้เพื่อรับลิงก์เปลี่ยนรหัสผ่าน",
+      );
+    }
+  }, []);
 
   const validateForm = () => {
     const nextErrors: FormErrors = {};
@@ -66,6 +88,7 @@ export function ForgotPassword() {
             <p className={styles.cardText}>กรอกอีเมลเพื่อรับขั้นตอนการรีเซ็ตรหัสผ่าน</p>
           </div>
 
+          {infoMessage ? <div className={`${styles.status} ${styles.statusInfo}`}>{infoMessage}</div> : null}
           {successMessage ? <div className={`${styles.status} ${styles.statusInfo}`}>{successMessage}</div> : null}
           {errors.form ? <div className={`${styles.status} ${styles.statusError}`}>{errors.form}</div> : null}
 

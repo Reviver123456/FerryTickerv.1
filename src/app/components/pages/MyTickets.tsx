@@ -56,7 +56,7 @@ export function MyTickets() {
               tickets: record.tickets,
               ticketNo: undefined,
               displayRef: record.bookingNo,
-              displayTitle: resolveDisplayValue(record.scheduleDate, record.scheduleTime, record.bookingNo),
+              displayTitle: resolveDisplayValue(record.primaryPassengerName, "ผู้โดยสาร"),
               displayDate: resolveDisplayValue(record.scheduleDate),
               displayTime: resolveDisplayValue(record.scheduleTime),
               qrImageUrl: undefined,
@@ -81,7 +81,7 @@ export function MyTickets() {
             tickets: record.tickets,
             ticketNo: issuedTicket.ticketNo || undefined,
             displayRef: issuedTicket.ticketNo || record.bookingNo,
-            displayTitle: resolveDisplayValue(issuedTicket.passengerName, record.scheduleDate, record.bookingNo),
+            displayTitle: resolveDisplayValue(issuedTicket.passengerName, record.primaryPassengerName, "ผู้โดยสาร"),
             displayDate: resolveDisplayValue(issuedTicket.travelDate, record.scheduleDate),
             displayTime: resolveDisplayValue(issuedTicket.travelTime, record.scheduleTime),
             qrImageUrl: getTicketQrImageUrl(issuedTicket),
@@ -184,8 +184,8 @@ export function MyTickets() {
                   });
                   navigate(
                     ticket.ticketNo
-                      ? `/ticket/${ticket.routeId}?ticketNo=${encodeURIComponent(ticket.ticketNo)}`
-                      : `/ticket/${ticket.routeId}`,
+                      ? `/ticket/${ticket.routeId}?bookingNo=${encodeURIComponent(ticket.bookingNo)}&ticketNo=${encodeURIComponent(ticket.ticketNo)}`
+                      : `/ticket/${ticket.routeId}?bookingNo=${encodeURIComponent(ticket.bookingNo)}`,
                   );
                 }}
                 className="bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer overflow-hidden"

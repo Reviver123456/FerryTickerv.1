@@ -43,6 +43,7 @@ export function Success() {
           contactEmail: result.contactEmail,
           contactName: booking.contact.fullName,
           contactPhone: booking.contact.phone,
+          primaryPassengerName: result.tickets[0]?.passengerName || booking.passengers[0]?.fullName || "",
           scheduleDate: booking.selectedSchedule?.dateLabel ?? "-",
           scheduleTime: booking.selectedSchedule?.timeLabel ?? "-",
           passengers: booking.passengers.length,

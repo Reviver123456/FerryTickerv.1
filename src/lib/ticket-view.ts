@@ -60,6 +60,7 @@ function createSyntheticBookingRecord(booking: BookingState): BookingHistoryReco
     contactEmail: booking.lastLookup.contactEmail,
     contactName: booking.contact.fullName,
     contactPhone: booking.contact.phone,
+    primaryPassengerName: booking.lastLookup.tickets[0]?.passengerName || booking.passengers[0]?.fullName || "",
     scheduleDate: booking.lastLookup.tickets[0]?.travelDate || booking.selectedSchedule?.dateLabel || "-",
     scheduleTime: booking.lastLookup.tickets[0]?.travelTime || booking.selectedSchedule?.timeLabel || "-",
     passengers: booking.lastLookup.tickets.length || booking.passengers.length,
@@ -91,6 +92,7 @@ function createSyntheticCurrentBookingRecord(booking: BookingState): BookingHist
     contactEmail: booking.contact.email,
     contactName: booking.contact.fullName,
     contactPhone: booking.contact.phone,
+    primaryPassengerName: lookupTickets[0]?.passengerName || booking.passengers[0]?.fullName || "",
     scheduleDate: lookupTickets[0]?.travelDate || booking.selectedSchedule?.dateLabel || "-",
     scheduleTime: lookupTickets[0]?.travelTime || booking.selectedSchedule?.timeLabel || "-",
     passengers:
@@ -129,4 +131,17 @@ export function findTicketViewBooking(booking: BookingState, routeId: number) {
   }
 
   return getTicketViewBookings(booking).find((record) => record.routeId === routeId) ?? null;
+}
+
+export function findTicketViewBookingByBookingNo(booking: BookingState, bookingNo: string) {
+  const normalizedBookingNo = bookingNo.trim();
+
+  if (!normalizedBookingNo) {
+    return null;
+  }
+
+  return (
+    getTicketViewBookings(booking).find((record) => record.bookingNo === normalizedBookingNo) ??
+    null
+  );
 }

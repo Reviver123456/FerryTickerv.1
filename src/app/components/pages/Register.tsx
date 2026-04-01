@@ -67,8 +67,8 @@ export function Register() {
 
     if (!form.password.trim()) {
       nextErrors.password = "กรุณากรอกรหัสผ่าน";
-    } else if (form.password.length < 6) {
-      nextErrors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+    } else if (form.password.length < 8) {
+      nextErrors.password = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
     }
 
     if (!form.confirmPassword.trim()) {
@@ -198,7 +198,7 @@ export function Register() {
                   autoComplete="new-password"
                   value={form.password}
                   onChange={(event) => setField("password", event.target.value)}
-                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                  placeholder="อย่างน้อย 8 ตัวอักษร"
                   className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
                 />
                 {errors.password ? <div className={styles.error}>{errors.password}</div> : null}

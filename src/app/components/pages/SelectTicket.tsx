@@ -127,11 +127,8 @@ export function SelectTicket() {
         authUser,
       );
 
-      setSelectedTickets(selectedItems);
-      setDraft({
-        ...draft,
-        items: selectedItems,
-      });
+      setSelectedTickets(draft.items);
+      setDraft(draft);
       navigate("/passenger-info");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "ไม่สามารถสร้าง booking draft ได้");
