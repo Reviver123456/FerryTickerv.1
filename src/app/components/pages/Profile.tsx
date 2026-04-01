@@ -612,9 +612,6 @@ export function Profile() {
                     <div className={styles.contactValueWrap}>
                       <div className={styles.contactLabel}>รหัสผ่าน</div>
                       <div className={styles.contactValue}>••••••••</div>
-                      <div className={styles.helperText}>
-                        เปลี่ยนได้ทันทีด้วยรหัสปัจจุบัน หรือกดรีเซ็ตทางอีเมลเมื่อจำรหัสไม่ได้
-                      </div>
                     </div>
 
                     {!isEditingPassword ? (
@@ -698,7 +695,7 @@ export function Profile() {
                           disabled={isChangingPassword}
                           className={styles.passwordLink}
                         >
-                          ลืมรหัสผ่าน? รีเซ็ตทางอีเมล
+                          ลืมรหัสผ่าน?
                         </button>
                       </div>
                     </div>
@@ -708,7 +705,7 @@ export function Profile() {
                       onClick={openForgotPasswordFlow}
                       className={styles.passwordLink}
                     >
-                      ลืมรหัสผ่าน? รีเซ็ตทางอีเมล
+                      ลืมรหัสผ่าน?
                     </button>
                   )}
                 </div>

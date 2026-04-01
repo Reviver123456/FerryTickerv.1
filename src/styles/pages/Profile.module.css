@@ -116,11 +116,16 @@
 
 .guestInfoIcon,
 .contactIcon,
-.menuIcon,
-.logoutIcon {
+.menuIcon {
   width: 1.25rem;
   height: 1.25rem;
   color: #0ea5e9;
+}
+
+.logoutIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #dc2626;
 }
 
 .heroTopRow {
