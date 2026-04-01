@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Mail } from "lucide-react";
 import { Link } from "@/lib/router";
 import { forgotPassword, isValidEmail } from "@/lib/ferry";
-import styles from "./Auth.module.css";
+import styles from "@/styles/pages/ForgotPassword.module.css";
 
 type FormErrors = {
   email?: string;
@@ -96,7 +96,7 @@ export function ForgotPassword() {
             <div className={styles.field}>
               <div className={styles.labelRow}>
                 <label className={styles.label} htmlFor="forgot-email">
-                  <Mail className="w-4 h-4" />
+                  <Mail className={styles.iconSm} />
                   อีเมล
                 </label>
                 <span className={styles.required}>จำเป็น</span>

@@ -1,0 +1,296 @@
+.page {
+  composes: page from "../shared/PageShell.module.css";
+}
+
+.containerSm {
+  composes: containerSm from "../shared/PageShell.module.css";
+}
+
+.mutedBox {
+  composes: mutedBox from "../shared/FormBase.module.css";
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.headerTitle {
+  margin: 0 0 0.5rem;
+}
+
+.headerMeta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.emptyCard,
+.sectionCard,
+.pricingCard {
+  padding: 1.5rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 1.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.emptyTitle {
+  margin: 0 0 0.75rem;
+}
+
+.emptyText {
+  margin: 0 0 1rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1.5rem;
+  background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+  color: #ffffff;
+}
+
+.content {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 8rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.editButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #0ea5e9;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
+}
+
+.editButton:hover {
+  color: #2563eb;
+}
+
+.iconSm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.infoList,
+.ticketList,
+.passengerList,
+.contactList,
+.pricingList {
+  display: grid;
+}
+
+.infoList,
+.pricingList {
+  gap: 1rem;
+}
+
+.ticketList,
+.passengerList,
+.contactList {
+  gap: 0.75rem;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.iconMd {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #0ea5e9;
+}
+
+.detailLabel {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.mutedBoxLabel {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.ticketRow,
+.pricingRow,
+.contactRow,
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ticketMeta {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.highlightAmount {
+  color: #0ea5e9;
+}
+
+.passengerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.passengerIconWrap {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+}
+
+.passengerIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #ffffff;
+}
+
+.passengerIndex {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.passengerType {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.contactSection {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.contactHeading {
+  margin: 0 0 0.75rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.contactLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+}
+
+.alertCard {
+  padding: 1.5rem;
+  border: 1px solid #dbeafe;
+  border-radius: 1.5rem;
+  background: #eff6ff;
+  color: #b91c1c;
+}
+
+.alertTitle {
+  margin: 0 0 0.75rem;
+}
+
+.alertList {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.pricingCard {
+  display: grid;
+  gap: 1rem;
+}
+
+.pricingHeading {
+  margin: 0;
+}
+
+.pricingLabel {
+  color: #64748b;
+}
+
+.pricingTotalRow {
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.pricingTotalLabel {
+  font-size: 1.125rem;
+}
+
+.pricingTotalAmount {
+  color: #0ea5e9;
+  font-size: 1.5rem;
+}
+
+.actionBar {
+  position: fixed;
+  right: 0;
+  bottom: 5rem;
+  left: 0;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.secondaryAction {
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 1.5rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.secondaryAction:hover {
+  border-color: #0ea5e9;
+}
+
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 24px 44px -26px rgba(37, 99, 235, 0.56);
+  transition: box-shadow 0.2s ease;
+}
+
+.primaryAction:hover {
+  box-shadow: 0 28px 52px -28px rgba(37, 99, 235, 0.62);
+}
+
+@media (min-width: 768px) {
+  .actionBar {
+    bottom: 2rem;
+  }
+}

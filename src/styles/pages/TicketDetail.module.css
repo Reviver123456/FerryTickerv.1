@@ -1,0 +1,282 @@
+.page {
+  composes: page from "../shared/PageShell.module.css";
+}
+
+.containerSm {
+  composes: containerSm from "../shared/PageShell.module.css";
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.backButton:hover {
+  color: #0f172a;
+}
+
+.backIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.emptyCard,
+.ticketCard,
+.sectionCard,
+.contactCard {
+  border: 1px solid #f1f5f9;
+  border-radius: 1.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.emptyCard {
+  padding: 2rem;
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 0.75rem;
+}
+
+.emptyText {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.statusWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1.5rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+
+.statusUsed {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.statusPending {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.statusCancelled {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.statusConfirmed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.ticketCard {
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.ticketHero {
+  padding: 1.5rem;
+  color: #ffffff;
+  text-align: center;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+}
+
+.ticketHeroLabel {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.ticketHeroValue {
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+}
+
+.ticketBody {
+  padding: 2rem;
+}
+
+.qrShell {
+  display: flex;
+  width: 18rem;
+  height: 18rem;
+  margin: 0 auto 1.5rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 4px solid #f1f5f9;
+  border-radius: 1.75rem;
+  background: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.qrImage {
+  width: 14rem;
+  height: 14rem;
+  object-fit: contain;
+}
+
+.qrPlaceholder {
+  width: 14rem;
+  height: 14rem;
+  color: #d1d5db;
+}
+
+.qrHint {
+  color: #64748b;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.sectionCard,
+.contactCard {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  margin: 0 0 1rem;
+}
+
+.detailList,
+.contactList {
+  display: grid;
+}
+
+.detailList {
+  gap: 1rem;
+}
+
+.contactList {
+  gap: 0.5rem;
+}
+
+.passengerRow,
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: #f8fafc;
+}
+
+.passengerIconWrap {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+}
+
+.passengerIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #ffffff;
+}
+
+.passengerContent {
+  flex: 1;
+}
+
+.passengerName {
+  font-size: 0.875rem;
+}
+
+.passengerMeta,
+.detailLabel {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.detailIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #0ea5e9;
+}
+
+.contactRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.contactLabel {
+  color: #64748b;
+}
+
+.contactValue {
+  text-align: right;
+}
+
+.breakAll {
+  word-break: break-all;
+}
+
+.summaryDivider {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.summaryLabel {
+  color: #64748b;
+}
+
+.summaryAmount {
+  color: #0ea5e9;
+  font-size: 1.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 6rem;
+}
+
+.actionButton {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 1.5rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.actionButton:hover {
+  border-color: #0ea5e9;
+}
+
+.actionIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}

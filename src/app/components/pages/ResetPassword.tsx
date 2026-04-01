@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, Link as LinkIcon, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "@/lib/router";
 import { resetPassword } from "@/lib/ferry";
-import styles from "./Auth.module.css";
+import styles from "@/styles/pages/ResetPassword.module.css";
 
 type FormState = {
   token: string;
@@ -104,7 +104,7 @@ export function ResetPassword() {
       <div className={styles.container}>
         <section className={styles.hero}>
           <div className={styles.eyebrow}>
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className={styles.iconSm} />
             ตั้งรหัสผ่านใหม่
           </div>
           <h1 className={styles.heroTitle}>ยืนยัน token แล้วตั้งรหัสผ่านใหม่ได้ทันที</h1>
@@ -114,15 +114,15 @@ export function ResetPassword() {
 
           <ul className={styles.heroList}>
             <li>
-              <LinkIcon className="w-4 h-4" />
+              <LinkIcon className={styles.iconSm} />
               ถ้า URL มี `token` ระบบจะกรอกให้โดยอัตโนมัติ
             </li>
             <li>
-              <KeyRound className="w-4 h-4" />
+              <KeyRound className={styles.iconSm} />
               ตรวจรหัสผ่านใหม่อย่างน้อย 8 ตัวอักษรก่อนส่ง
             </li>
             <li>
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className={styles.iconSm} />
               สำเร็จแล้วจะพากลับไปหน้าเข้าสู่ระบบ
             </li>
           </ul>
@@ -140,7 +140,7 @@ export function ResetPassword() {
             <div className={styles.field}>
               <div className={styles.labelRow}>
                 <label className={styles.label} htmlFor="reset-token">
-                  <LinkIcon className="w-4 h-4" />
+                  <LinkIcon className={styles.iconSm} />
                   Reset Token
                 </label>
                 <span className={styles.required}>จำเป็น</span>
@@ -162,7 +162,7 @@ export function ResetPassword() {
               <div className={styles.field}>
                 <div className={styles.labelRow}>
                   <label className={styles.label} htmlFor="reset-password">
-                    <KeyRound className="w-4 h-4" />
+                    <KeyRound className={styles.iconSm} />
                     รหัสผ่านใหม่
                   </label>
                   <span className={styles.required}>จำเป็น</span>
@@ -183,7 +183,7 @@ export function ResetPassword() {
               <div className={styles.field}>
                 <div className={styles.labelRow}>
                   <label className={styles.label} htmlFor="reset-confirm-password">
-                    <KeyRound className="w-4 h-4" />
+                    <KeyRound className={styles.iconSm} />
                     ยืนยันรหัสผ่านใหม่
                   </label>
                   <span className={styles.required}>จำเป็น</span>

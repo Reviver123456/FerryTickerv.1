@@ -6,7 +6,7 @@ import { KeyRound, Mail, Phone, UserRound } from "lucide-react";
 import { Link, useNavigate } from "@/lib/router";
 import { isValidEmail, isValidPhone, registerUser, sanitizePhone } from "@/lib/ferry";
 import { useAppContext } from "@/app/providers/AppProvider";
-import styles from "./Auth.module.css";
+import styles from "@/styles/pages/Register.module.css";
 
 type FormState = {
   fullName: string;
@@ -124,7 +124,7 @@ export function Register() {
             <div className={styles.field}>
               <div className={styles.labelRow}>
                 <label className={styles.label} htmlFor="register-full-name">
-                  <UserRound className="w-4 h-4" />
+                  <UserRound className={styles.iconSm} />
                   ชื่อ-นามสกุล
                 </label>
                 <span className={styles.required}>จำเป็น</span>
@@ -145,7 +145,7 @@ export function Register() {
               <div className={styles.field}>
                 <div className={styles.labelRow}>
                   <label className={styles.label} htmlFor="register-phone">
-                    <Phone className="w-4 h-4" />
+                    <Phone className={styles.iconSm} />
                     เบอร์โทรศัพท์
                   </label>
                   <span className={styles.required}>จำเป็น</span>
@@ -165,7 +165,7 @@ export function Register() {
               <div className={styles.field}>
                 <div className={styles.labelRow}>
                   <label className={styles.label} htmlFor="register-email">
-                    <Mail className="w-4 h-4" />
+                    <Mail className={styles.iconSm} />
                     อีเมล
                   </label>
                   <span className={styles.required}>จำเป็น</span>
@@ -187,7 +187,7 @@ export function Register() {
               <div className={styles.field}>
                 <div className={styles.labelRow}>
                   <label className={styles.label} htmlFor="register-password">
-                    <KeyRound className="w-4 h-4" />
+                    <KeyRound className={styles.iconSm} />
                     รหัสผ่าน
                   </label>
                   <span className={styles.required}>จำเป็น</span>
@@ -207,7 +207,7 @@ export function Register() {
               <div className={styles.field}>
                 <div className={styles.labelRow}>
                   <label className={styles.label} htmlFor="register-confirm-password">
-                    <KeyRound className="w-4 h-4" />
+                    <KeyRound className={styles.iconSm} />
                     ยืนยันรหัสผ่าน
                   </label>
                   <span className={styles.required}>จำเป็น</span>

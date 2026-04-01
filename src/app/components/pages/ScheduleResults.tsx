@@ -1,11 +1,13 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Clock, Star } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { fetchSchedules, formatThaiDate, getHourFromTimeLabel } from "@/lib/ferry";
 import type { ScheduleSummary } from "@/lib/app-types";
+import styles from "@/styles/pages/ScheduleResults.module.css";
 
 function parseScheduleDateTime(schedule: ScheduleSummary) {
   const dateMatch = schedule.dateKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -124,36 +126,36 @@ export function ScheduleResults() {
   }, [booking.search.timeFilter, booking.search.travelDate, now, schedules]);
 
   return (
-    <div className="booking-page">
-      <div className="booking-page__container booking-page__container--sm">
-        <div className="mb-6">
-          <h1 className="text-2xl mb-2">รอบเรือที่พบ</h1>
-          <p className="text-gray-600 text-sm">
+    <div className={styles.page}>
+      <div className={styles.containerSm}>
+        <div className={styles.header}>
+          <h1 className={styles.headerTitle}>รอบเรือที่พบ</h1>
+          <p className={styles.headerMeta}>
             วันที่ {formatThaiDate(booking.search.travelDate)} • ผู้โดยสาร {booking.search.passengers} คน
           </p>
         </div>
 
-        {error ? <div className="error-banner mb-6">{error}</div> : null}
+        {error ? <div className={styles.errorBanner}>{error}</div> : null}
 
         {isLoading ? (
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-center text-gray-600">
+          <div className={styles.loadingCard}>
             กำลังโหลดรอบเรือจาก API...
           </div>
         ) : filteredSchedules.length === 0 ? (
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-            <h2 className="text-lg mb-3">ไม่พบรอบเรือที่ตรงเงื่อนไข</h2>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className={styles.emptyCard}>
+            <h2>ไม่พบรอบเรือที่ตรงเงื่อนไข</h2>
+            <p className={styles.emptyCardText}>
               ลองเปลี่ยนวันที่หรือช่วงเวลา แล้วค้นหาอีกครั้ง ระบบกำลังใช้ข้อมูลจาก `GET /api/schedules`
             </p>
             <button
               onClick={() => navigate("/")}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white"
+              className={styles.backButton}
             >
               กลับไปค้นหาใหม่
             </button>
           </div>
         ) : (
-          <div className="space-y-4 mb-24">
+          <div className={styles.list}>
             {filteredSchedules.map((schedule) => {
               const departureDateTime = parseScheduleDateTime(schedule);
               const isClosed = departureDateTime ? now.getTime() >= departureDateTime.getTime() : false;
@@ -166,74 +168,75 @@ export function ScheduleResults() {
               return (
                 <div
                   key={schedule.id}
-                  className={`bg-white rounded-3xl p-6 shadow-sm border transition-all ${
-                    isClosed
-                      ? "border-gray-300 bg-slate-100 opacity-75"
-                      : schedule.recommended
-                        ? "border-[#0EA5E9] shadow-lg"
-                        : "border-gray-100 hover:shadow-md"
-                  } ${!isAvailable ? "grayscale-[0.15]" : ""}`}
+                  className={clsx(
+                    styles.card,
+                    isClosed && styles.cardClosed,
+                    schedule.recommended && !isClosed && styles.cardRecommended,
+                    !isAvailable && styles.cardUnavailable,
+                  )}
                 >
                   {schedule.recommended && !isClosed ? (
-                    <div className="flex items-center gap-2 mb-4 text-[#0EA5E9] text-sm">
-                      <Star className="w-4 h-4 fill-current" />
+                    <div className={styles.recommendedBadge}>
+                      <Star className={styles.recommendedIcon} />
                       <span>แนะนำ</span>
                     </div>
                   ) : null}
 
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <Clock className={`w-6 h-6 ${isClosed ? "text-gray-400" : "text-[#0EA5E9]"}`} />
+                  <div className={styles.summaryRow}>
+                    <div className={styles.timeGroup}>
+                      <Clock className={clsx(styles.timeIcon, isClosed && styles.timeIconClosed)} />
                       <div>
-                        <div className="text-2xl">{schedule.timeLabel}</div>
-                        <div className="text-sm text-gray-500">{schedule.dateLabel}</div>
+                        <div className={styles.timeValue}>{schedule.timeLabel}</div>
+                        <div className={styles.timeMeta}>{schedule.dateLabel}</div>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className={`text-2xl ${isClosed ? "text-gray-400" : "text-[#0EA5E9]"}`}>฿{schedule.price}</div>
-                      <div className="text-xs text-gray-500">เริ่มต้นต่อคน</div>
+                    <div className={styles.priceGroup}>
+                      <div className={clsx(styles.priceValue, isClosed && styles.priceValueClosed)}>฿{schedule.price}</div>
+                      <div className={styles.priceMeta}>เริ่มต้นต่อคน</div>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-600 mb-1">{schedule.routeName}</div>
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-gray-600">ที่นั่งว่าง</span>
-                      <span className="text-gray-900">
+                  <div className={styles.body}>
+                    <div className={styles.routeName}>{schedule.routeName}</div>
+                    <div className={styles.seatRow}>
+                      <span className={styles.seatLabel}>ที่นั่งว่าง</span>
+                      <span className={styles.seatValue}>
                         {schedule.availableSeats}
                         {schedule.totalSeats ? `/${schedule.totalSeats}` : ""}
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={styles.seatProgress}>
                       <div
-                        className={`h-full rounded-full transition-all ${
+                        className={clsx(
+                          styles.seatProgressBar,
                           isClosed
-                            ? "bg-gray-400"
+                            ? styles.seatProgressBarClosed
                             : percentage > 50
-                              ? "bg-green-500"
+                              ? styles.seatProgressBarOpen
                               : percentage > 20
-                                ? "bg-orange-500"
-                                : "bg-red-500"
-                        }`}
+                                ? styles.seatProgressBarWarn
+                                : styles.seatProgressBarDanger,
+                        )}
                         style={{ width: `${Math.max(Math.min(percentage, 100), 0)}%` }}
                       />
                     </div>
                     {!hasEnoughSeats ? (
-                      <div className="field-help">รอบนี้มีที่นั่งไม่พอสำหรับผู้โดยสาร {booking.search.passengers} คน</div>
+                      <div className={styles.fieldHelp}>รอบนี้มีที่นั่งไม่พอสำหรับผู้โดยสาร {booking.search.passengers} คน</div>
                     ) : null}
                   </div>
 
                   {!isClosed ? (
-                    <div className="flex items-center justify-between">
+                    <div className={styles.actionRow}>
                       <span
-                        className={`text-sm px-4 py-2 rounded-full ${
+                        className={clsx(
+                          styles.statusBadge,
                           isAvailable
                             ? schedule.status === "ใกล้เต็ม"
-                              ? "bg-orange-100 text-orange-700"
-                              : "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
+                              ? styles.statusBadgeWarn
+                              : styles.statusBadgeReady
+                            : styles.statusBadgeDisabled,
+                        )}
                       >
                         {statusLabel}
                       </span>
@@ -250,14 +253,10 @@ export function ScheduleResults() {
                           navigate("/select-ticket");
                         }}
                         disabled={!isAvailable}
-                        className={`px-6 py-2 rounded-xl flex items-center gap-2 transition-all ${
-                          isAvailable
-                            ? "bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg"
-                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        }`}
+                        className={clsx(styles.selectButton, !isAvailable && styles.selectButtonDisabled)}
                       >
                         <span>{buttonLabel}</span>
-                        {isAvailable ? <ChevronRight className="w-4 h-4" /> : null}
+                        {isAvailable ? <ChevronRight className={styles.buttonIcon} /> : null}
                       </button>
                     </div>
                   ) : null}

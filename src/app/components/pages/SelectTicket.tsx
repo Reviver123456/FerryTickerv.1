@@ -1,11 +1,13 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { Baby, Check, Crown, LoaderCircle, User } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { createBookingDraft, fetchTicketTypes } from "@/lib/ferry";
 import type { TicketTypeOption } from "@/lib/app-types";
+import styles from "@/styles/pages/SelectTicket.module.css";
 
 type TicketCounts = Record<string, number>;
 
@@ -139,14 +141,14 @@ export function SelectTicket() {
 
   if (!booking.selectedSchedule) {
     return (
-      <div className="booking-page">
-        <div className="booking-page__container booking-page__container--sm">
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-            <h1 className="text-2xl mb-3">ยังไม่ได้เลือกรอบเรือ</h1>
-            <p className="text-sm text-gray-600 mb-4">เลือกรอบเรือก่อนเพื่อโหลดประเภทตั๋วและสร้าง booking draft</p>
+      <div className={styles.page}>
+        <div className={styles.containerSm}>
+          <div className={styles.emptyCard}>
+            <h1>ยังไม่ได้เลือกรอบเรือ</h1>
+            <p className={styles.emptyText}>เลือกรอบเรือก่อนเพื่อโหลดประเภทตั๋วและสร้าง booking draft</p>
             <button
               onClick={() => navigate("/schedules")}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white"
+              className={styles.primaryButton}
             >
               กลับไปเลือกรอบเรือ
             </button>
@@ -157,23 +159,23 @@ export function SelectTicket() {
   }
 
   return (
-    <div className="booking-page">
-      <div className="booking-page__container booking-page__container--sm">
-        <div className="mb-8">
-          <h1 className="text-2xl mb-2">เลือกประเภทตั๋ว</h1>
-          <p className="text-gray-600 text-sm">
+    <div className={styles.page}>
+      <div className={styles.containerSm}>
+        <div className={styles.header}>
+          <h1 className={styles.headerTitle}>เลือกประเภทตั๋ว</h1>
+          <p className={styles.headerMeta}>
             รอบ {booking.selectedSchedule.timeLabel} • วันที่ {booking.selectedSchedule.dateLabel}
           </p>
         </div>
 
-        {error ? <div className="error-banner mb-6">{error}</div> : null}
+        {error ? <div className={styles.errorBanner}>{error}</div> : null}
 
         {isLoading ? (
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-center text-gray-600">
+          <div className={styles.loadingCard}>
             กำลังโหลดประเภทตั๋ว...
           </div>
         ) : (
-          <div className="space-y-4 mb-32">
+          <div className={styles.list}>
             {ticketTypes.map((type) => {
               const Icon = getTicketIcon(type);
               const count = ticketCounts[type.id] ?? 0;
@@ -181,62 +183,60 @@ export function SelectTicket() {
               return (
                 <div
                   key={type.id}
-                  className={`bg-white rounded-3xl p-6 shadow-sm border transition-all ${
-                    type.highlight ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : "border-gray-100"
-                  } ${count > 0 ? "ring-2 ring-[#0EA5E9] ring-offset-2" : ""}`}
+                  className={clsx(
+                    styles.ticketCard,
+                    type.highlight && styles.ticketCardHighlight,
+                    count > 0 && styles.ticketCardActive,
+                  )}
                 >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                        type.highlight ? "bg-gradient-to-br from-[#0EA5E9] to-[#2563EB]" : "bg-gradient-to-br from-[#0EA5E9] to-[#2563EB]"
-                      }`}
-                    >
-                      <Icon className="w-6 h-6 text-white" />
+                  <div className={styles.ticketHeader}>
+                    <div className={styles.ticketIconWrap}>
+                      <Icon className={styles.ticketIcon} />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg">{type.name}</h3>
+                    <div className={styles.ticketInfo}>
+                      <div className={styles.ticketTitleRow}>
+                        <h3 className={styles.ticketName}>{type.name}</h3>
                         {type.highlight ? (
-                          <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white">
+                          <span className={styles.highlightBadge}>
                             แนะนำ
                           </span>
                         ) : null}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xl text-[#0EA5E9]">฿{type.price}</div>
-                      <div className="text-xs text-gray-500">ต่อคน</div>
+                    <div className={styles.priceGroup}>
+                      <div className={styles.priceValue}>฿{type.price}</div>
+                      <div className={styles.priceMeta}>ต่อคน</div>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <div className="flex flex-wrap gap-2">
+                  <div className={styles.benefitWrap}>
+                    <div className={styles.benefitList}>
                       {type.benefits.map((benefit) => (
                         <div
                           key={`${type.id}-${benefit}`}
-                          className="flex items-center gap-1 text-xs text-gray-600 bg-white/70 px-3 py-1 rounded-full"
+                          className={styles.benefitChip}
                         >
-                          <Check className="w-3 h-3 text-green-600" />
+                          <Check className={styles.benefitIcon} />
                           {benefit}
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">จำนวน</span>
-                    <div className="flex items-center gap-4">
+                  <div className={styles.counterRow}>
+                    <span className={styles.counterLabel}>จำนวน</span>
+                    <div className={styles.counterControls}>
                       <button
                         onClick={() => updateTicket(type.id, -1)}
-                        className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-lg"
+                        className={clsx(styles.counterButton, styles.counterButtonMinus)}
                         disabled={count === 0}
                       >
                         −
                       </button>
-                      <span className="text-xl w-8 text-center">{count}</span>
+                      <span className={styles.counterValue}>{count}</span>
                       <button
                         onClick={() => updateTicket(type.id, 1)}
-                        className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg flex items-center justify-center transition-all text-lg"
+                        className={clsx(styles.counterButton, styles.counterButtonPlus)}
                       >
                         +
                       </button>
@@ -248,25 +248,21 @@ export function SelectTicket() {
           </div>
         )}
 
-        <div className="fixed bottom-20 md:bottom-8 left-0 right-0 px-4 max-w-2xl mx-auto">
-          <div className="bg-white rounded-3xl shadow-2xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
+        <div className={styles.actionBar}>
+          <div className={styles.actionCard}>
+            <div className={styles.actionRow}>
               <div>
-                <div className="text-sm text-gray-600">ทั้งหมด {totalTickets} ตั๋ว</div>
-                <div className="text-2xl text-[#0EA5E9]">฿{totalPrice}</div>
+                <div className={styles.actionMeta}>ทั้งหมด {totalTickets} ตั๋ว</div>
+                <div className={styles.actionAmount}>฿{totalPrice}</div>
               </div>
               <button
                 onClick={handleContinue}
                 disabled={totalTickets === 0 || isSubmitting}
-                className={`px-8 py-3 rounded-2xl transition-all ${
-                  totalTickets > 0 && !isSubmitting
-                    ? "bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
+                className={clsx(styles.actionButton, (totalTickets === 0 || isSubmitting) && styles.actionButtonDisabled)}
               >
                 {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <LoaderCircle className="w-4 h-4 animate-spin" />
+                  <span className={styles.loadingState}>
+                    <LoaderCircle className={styles.spinner} />
                     กรุณารอสักครู่...
                   </span>
                 ) : (
@@ -274,7 +270,7 @@ export function SelectTicket() {
                 )}
               </button>
             </div>
-            <div className="field-help">จำนวนตั๋วที่เลือกจะถูกใช้สร้างจำนวนฟอร์มผู้โดยสารในขั้นตอนถัดไป</div>
+            <div className={styles.fieldHelp}>จำนวนตั๋วที่เลือกจะถูกใช้สร้างจำนวนฟอร์มผู้โดยสารในขั้นตอนถัดไป</div>
           </div>
         </div>
       </div>

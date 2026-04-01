@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, ChevronRight, Clock, Users } from "lucide-react";
 import { useNavigate } from "@/lib/router";
@@ -7,6 +8,7 @@ import { useAppContext } from "@/app/providers/AppProvider";
 import { fetchSchedules, formatThaiDate, getTodayDateKey } from "@/lib/ferry";
 import type { ScheduleSummary } from "@/lib/app-types";
 import type Litepicker from "litepicker";
+import styles from "@/styles/pages/Home.module.css";
 
 function getScheduleDepartureTime(schedule: ScheduleSummary, dateKey: string) {
   if (schedule.departureAt) {
@@ -164,69 +166,68 @@ export function Home() {
   }, [activeTodayDateKey, allSchedules, searchedDateKey]);
 
   return (
-    <div className="booking-page">
-      <div className="bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-white pt-8 pb-32 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl mb-3">
+    <div className={styles.page}>
+      <div className={styles.hero}>
+        <div className={styles.heroInner}>
+          <div className={styles.heroContent}>
+            <h1 className={styles.heroTitle}>
               จองตั๋วเรือออนไลน์
               <br />
               ง่าย สะดวก จบในที่เดียว
             </h1>
-            <p className="text-blue-100 text-sm md:text-base">ค้นหารอบเรือ เลือกตั๋ว ชำระเงิน และตรวจสอบตั๋วได้จากหน้าเดียวกัน</p>
+            <p className={styles.heroDescription}>ค้นหารอบเรือ เลือกตั๋ว ชำระเงิน และตรวจสอบตั๋วได้จากหน้าเดียวกัน</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 -mt-24 mb-12">
-        <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8">
-          <div className="space-y-4">
+      <div className={styles.searchPanelWrap}>
+        <div className={styles.searchPanel}>
+          <div className={styles.searchFields}>
             <div>
-              <label className="field-label">
+              <label className={styles.fieldLabel}>
                 วันที่เดินทาง
-                <span className="field-label__required">จำเป็น</span>
+                <span className={styles.requiredBadge}>จำเป็น</span>
               </label>
               <div
                 ref={datePickerWrapRef}
                 onClick={() => dateInputRef.current?.focus()}
-                className="home-date-picker flex items-center gap-3 p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-200 transition-colors cursor-pointer"
+                className={styles.datePickerShell}
               >
-                <Calendar className="w-5 h-5 text-[#0EA5E9] flex-shrink-0" />
+                <Calendar className={styles.fieldIcon} />
                 <input
                   ref={dateInputRef}
                   type="text"
                   readOnly
                   value={formatThaiDate(activeDateKey)}
-                  className="w-full border-0 bg-transparent text-gray-900 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 cursor-pointer shadow-none"
-                  style={{ border: "none" }}
+                  className={styles.dateInput}
                 />
               </div>
             </div>
 
             <div>
-              <label className="field-label">
+              <label className={styles.fieldLabel}>
                 จำนวนผู้โดยสาร
-                <span className="field-label__required">จำเป็น</span>
+                <span className={styles.requiredBadge}>จำเป็น</span>
               </label>
-              <div className="flex items-center gap-4 p-4 rounded-2xl border-2 border-gray-200">
-                <Users className="w-5 h-5 text-[#0EA5E9]" />
-                <div className="flex items-center gap-4 flex-1">
+              <div className={styles.passengerShell}>
+                <Users className={styles.fieldIcon} />
+                <div className={styles.passengerControls}>
                   <button
                     onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                    className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                    className={styles.counterButton}
                   >
                     −
                   </button>
-                  <span className="text-lg flex-1 text-center">{passengers} คน</span>
+                  <span className={styles.counterValue}>{passengers} คน</span>
                   <button
                     onClick={() => setPassengers(Math.min(10, passengers + 1))}
-                    className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                    className={styles.counterButton}
                   >
                     +
                   </button>
                 </div>
               </div>
-              <div className="field-help">ไปเลือกช่วงเวลาและวันเดินทางต่อในหน้าค้นหารอบเรือ</div>
+              <div className={styles.fieldHelp}>ไปเลือกช่วงเวลาและวันเดินทางต่อในหน้าค้นหารอบเรือ</div>
             </div>
 
             <button
@@ -238,7 +239,7 @@ export function Home() {
                   schedulesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 });
               }}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
+              className={styles.searchButton}
             >
               <span>ค้นหารอบเรือ</span>
             </button>
@@ -246,22 +247,22 @@ export function Home() {
         </div>
       </div>
 
-      <div ref={schedulesSectionRef} className="max-w-7xl mx-auto px-4 mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl">{isShowingToday ? "รอบเรือของวันนี้" : `รอบเรือของวันที่ ${searchedDateLabel}`}</h2>
+      <div ref={schedulesSectionRef} className={styles.schedulesSection}>
+        <div className={styles.schedulesHeader}>
+          <h2>{isShowingToday ? "รอบเรือของวันนี้" : `รอบเรือของวันที่ ${searchedDateLabel}`}</h2>
           <button
             onClick={() => {
               updateSearch({ passengers: searchedPassengers, travelDate: searchedDateKey });
               navigate("/schedules");
             }}
-            className="text-sm text-[#0EA5E9] hover:text-[#2563EB] flex items-center gap-1"
+            className={styles.viewAllButton}
           >
             ดูทั้งหมด
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className={styles.viewAllIcon} />
           </button>
         </div>
-        <div className="overflow-x-auto -mx-4 px-4">
-          <div className="flex gap-4 pb-4">
+        <div className={styles.scheduleScroller}>
+          <div className={styles.scheduleList}>
             {displayedSchedules.length > 0 ? (
               displayedSchedules.map((schedule) => {
                 const hasEnoughSeats = schedule.availableSeats >= searchedPassengers;
@@ -288,31 +289,30 @@ export function Home() {
                       navigate("/select-ticket");
                     }}
                     disabled={!isAvailable}
-                    className={`bg-white rounded-2xl p-5 shadow-sm border min-w-[180px] text-left transition-all ${
-                      isAvailable ? "border-gray-100 hover:shadow-md hover:-translate-y-1" : "border-gray-100 opacity-60 cursor-not-allowed"
-                    }`}
+                    className={clsx(styles.scheduleCard, !isAvailable && styles.scheduleCardDisabled)}
                   >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Clock className="w-4 h-4 text-[#0EA5E9]" />
-                      <span className="text-lg">{schedule.timeLabel}</span>
+                    <div className={styles.scheduleCardTimeRow}>
+                      <Clock className={styles.viewAllIcon} />
+                      <span className={styles.scheduleTime}>{schedule.timeLabel}</span>
                     </div>
-                    <div className="mb-3">
+                    <div className={styles.scheduleStatusWrap}>
                       <span
-                        className={`text-xs px-3 py-1 rounded-full ${
-                          isAvailable ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                        }`}
+                        className={clsx(
+                          styles.scheduleStatus,
+                          isAvailable ? styles.scheduleStatusOpen : styles.scheduleStatusClose,
+                        )}
                       >
                         {statusLabel}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600 mb-1">เหลือที่นั่ง {schedule.availableSeats}</div>
-                    {!hasEnoughSeats ? <div className="text-xs text-orange-700 mb-2">ที่นั่งไม่พอสำหรับ {searchedPassengers} คน</div> : null}
+                    <div className={styles.scheduleSeats}>เหลือที่นั่ง {schedule.availableSeats}</div>
+                    {!hasEnoughSeats ? <div className={styles.scheduleWarning}>ที่นั่งไม่พอสำหรับ {searchedPassengers} คน</div> : null}
                   </button>
                 );
               })
             ) : (
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 min-w-[280px]">
-                <div className="text-sm text-gray-600">
+              <div className={styles.emptyCard}>
+                <div>
                   {isShowingToday ? "ยังไม่พบรอบเรือของวันนี้ตอนนี้" : `ยังไม่พบรอบเรือของวันที่ ${searchedDateLabel} ตอนนี้`}
                 </div>
               </div>

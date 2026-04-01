@@ -1,0 +1,285 @@
+.page {
+  composes: page from "../shared/PageShell.module.css";
+}
+
+.containerSm {
+  composes: containerSm from "../shared/PageShell.module.css";
+}
+
+.emptyCard,
+.bookingCard,
+.ticketsCard {
+  border: 1px solid #f1f5f9;
+  border-radius: 1.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.emptyCard {
+  padding: 2rem;
+}
+
+.emptyText {
+  margin: 0 0 1rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.primaryButton,
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.5rem;
+  background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+  color: #ffffff;
+}
+
+.primaryButton {
+  padding: 0.75rem 1.5rem;
+}
+
+.hero {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.heroIconWrap {
+  display: inline-flex;
+  width: 5rem;
+  height: 5rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);
+}
+
+.heroIcon {
+  width: 3rem;
+  height: 3rem;
+  color: #ffffff;
+}
+
+.heroTitle {
+  margin: 0 0 0.5rem;
+}
+
+.heroText {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.bookingCard {
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.bookingHero {
+  padding: 1.5rem;
+  color: #ffffff;
+  text-align: center;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+}
+
+.bookingHeroLabel {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.bookingHeroValue {
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+}
+
+.bookingBody {
+  padding: 2rem;
+}
+
+.detailList {
+  display: grid;
+  gap: 1rem;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: #f8fafc;
+}
+
+.detailIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #0ea5e9;
+}
+
+.detailLabel {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.summaryLabel {
+  color: #64748b;
+}
+
+.summaryAmount {
+  color: #0ea5e9;
+  font-size: 1.5rem;
+}
+
+.ticketsCard {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+}
+
+.sectionTitleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sectionIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #0ea5e9;
+}
+
+.ticketList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ticketRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: #f8fafc;
+}
+
+.ticketQrWrap {
+  display: inline-flex;
+  width: 4rem;
+  height: 4rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.ticketQrImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ticketQrIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #0ea5e9;
+}
+
+.ticketContent {
+  flex: 1;
+}
+
+.ticketNumber {
+  font-size: 0.875rem;
+}
+
+.ticketMeta {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.ticketToken {
+  margin-top: 0.25rem;
+  color: #6b7280;
+  font-size: 0.6875rem;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.75rem;
+}
+
+.infoCard {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid #dbeafe;
+  border-radius: 1.5rem;
+  background: #eff6ff;
+}
+
+.infoTitleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.infoIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #2563eb;
+}
+
+.infoList {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.actions {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 6rem;
+}
+
+.primaryAction,
+.secondaryAction {
+  width: 100%;
+  padding: 1rem;
+}
+
+.primaryAction {
+  box-shadow: 0 18px 36px -28px rgba(37, 99, 235, 0.52);
+}
+
+.secondaryAction {
+  border: 2px solid #e2e8f0;
+  border-radius: 1.5rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.secondaryAction:hover {
+  border-color: #0ea5e9;
+}

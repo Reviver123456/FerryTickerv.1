@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { Bell, Clock3, CreditCard, Inbox } from "lucide-react";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { buildNotifications, type AppNotification } from "@/lib/notifications";
-import styles from "./Notifications.module.css";
+import styles from "@/styles/pages/Notifications.module.css";
 
 type NotificationView = AppNotification & {
   isRead: boolean;
@@ -187,7 +187,7 @@ export function Notifications() {
           <div className={styles.listShell}>
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
-                <Inbox className="h-8 w-8" />
+                <Inbox className={styles.emptyIconSymbol} />
               </div>
               <h2 className={styles.emptyTitle}>ไม่มีข้อความแจ้งเตือน</h2>
               <p className={styles.emptyMessage}>
@@ -225,7 +225,7 @@ export function Notifications() {
                               notification.tone === "account" && styles.iconAccount,
                             )}
                           >
-                            <Icon className="h-6 w-6" />
+                            <Icon className={styles.itemIcon} />
                           </div>
 
                           <div className={styles.content}>

@@ -1,6 +1,7 @@
 import type { BookingHistoryRecord, BookingState } from "@/lib/app-types";
 
 export type TicketTab = "unused" | "used";
+export type BookingStatusTone = "used" | "pending" | "cancelled" | "confirmed";
 
 export type TicketViewBooking = BookingHistoryRecord & {
   routeId: number;
@@ -17,7 +18,7 @@ export function getBookingStatusMeta(record: Pick<BookingHistoryRecord, "status"
     return {
       tab: "used" as TicketTab,
       label: "ใช้งานแล้ว",
-      badgeClassName: "bg-slate-100 text-slate-600",
+      badgeTone: "used" as BookingStatusTone,
     };
   }
 
@@ -25,7 +26,7 @@ export function getBookingStatusMeta(record: Pick<BookingHistoryRecord, "status"
     return {
       tab: "unused" as TicketTab,
       label: "รอชำระเงิน",
-      badgeClassName: "bg-orange-100 text-orange-600",
+      badgeTone: "pending" as BookingStatusTone,
     };
   }
 
@@ -33,14 +34,14 @@ export function getBookingStatusMeta(record: Pick<BookingHistoryRecord, "status"
     return {
       tab: "unused" as TicketTab,
       label: "ยกเลิกแล้ว",
-      badgeClassName: "bg-rose-100 text-rose-600",
+      badgeTone: "cancelled" as BookingStatusTone,
     };
   }
 
   return {
     tab: "unused" as TicketTab,
     label: "ยืนยันแล้ว",
-    badgeClassName: "bg-green-100 text-green-700",
+    badgeTone: "confirmed" as BookingStatusTone,
   };
 }
 

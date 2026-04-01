@@ -1,0 +1,297 @@
+.page {
+  composes: page from "../shared/PageShell.module.css";
+}
+
+.fieldLabel {
+  composes: fieldLabel from "../shared/FormBase.module.css";
+}
+
+.requiredBadge {
+  composes: requiredBadge from "../shared/FormBase.module.css";
+}
+
+.fieldHelp {
+  composes: fieldHelp from "../shared/FormBase.module.css";
+}
+
+.hero {
+  padding: 2rem 1rem 8rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+}
+
+.heroInner {
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+.heroContent {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.heroTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.875rem;
+  line-height: 1.15;
+}
+
+.heroDescription {
+  margin: 0;
+  color: #dbeafe;
+  font-size: 0.875rem;
+}
+
+.searchPanelWrap {
+  max-width: 56rem;
+  margin: -6rem auto 3rem;
+  padding: 0 1rem;
+}
+
+.searchPanel {
+  padding: 1.5rem;
+  border-radius: 1.75rem;
+  background: #ffffff;
+  box-shadow: 0 24px 50px -24px rgba(37, 99, 235, 0.35);
+}
+
+.searchFields {
+  display: grid;
+  gap: 1rem;
+}
+
+.datePickerShell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 1.5rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.datePickerShell:hover {
+  border-color: #bfdbfe;
+}
+
+.datePickerShell :global(.litepicker) {
+  top: 26.9rem !important;
+}
+
+.fieldIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: #0ea5e9;
+}
+
+.dateInput {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.dateInput:focus {
+  outline: none;
+}
+
+.passengerShell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 1.5rem;
+}
+
+.passengerControls {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 1rem;
+}
+
+.counterButton {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 1.125rem;
+  transition: background-color 0.2s ease;
+}
+
+.counterButton:hover {
+  background: #e2e8f0;
+}
+
+.counterValue {
+  flex: 1;
+  text-align: center;
+  font-size: 1.125rem;
+}
+
+.searchButton {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+  color: #ffffff;
+  transition: box-shadow 0.2s ease;
+}
+
+.searchButton:hover {
+  box-shadow: 0 18px 36px -24px rgba(37, 99, 235, 0.52);
+}
+
+.schedulesSection {
+  max-width: 80rem;
+  margin: 0 auto 3rem;
+  padding: 0 1rem;
+}
+
+.schedulesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.viewAllButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #0ea5e9;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
+}
+
+.viewAllButton:hover {
+  color: #2563eb;
+}
+
+.viewAllIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.scheduleScroller {
+  margin: 0 -1rem;
+  padding: 0 1rem;
+  overflow-x: auto;
+}
+
+.scheduleList {
+  display: flex;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+.scheduleCard {
+  min-width: 11.25rem;
+  padding: 1.25rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 1.5rem;
+  background: #ffffff;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.scheduleCard:hover:not(:disabled) {
+  transform: translateY(-0.25rem);
+  box-shadow: 0 16px 32px -24px rgba(15, 23, 42, 0.2);
+}
+
+.scheduleCardDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.scheduleCardTimeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.scheduleTime {
+  font-size: 1.125rem;
+}
+
+.scheduleStatusWrap {
+  margin-bottom: 0.75rem;
+}
+
+.scheduleStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.scheduleStatusOpen {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.scheduleStatusClose {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.scheduleSeats {
+  margin-bottom: 0.25rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.scheduleWarning {
+  margin-bottom: 0.5rem;
+  color: #c2410c;
+  font-size: 0.75rem;
+}
+
+.emptyCard {
+  min-width: 17.5rem;
+  padding: 1.25rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 1.5rem;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 0.875rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding-top: 2.5rem;
+  }
+
+  .heroTitle {
+    font-size: 2.25rem;
+  }
+
+  .heroDescription {
+    font-size: 1rem;
+  }
+
+  .searchPanel {
+    padding: 2rem;
+  }
+}

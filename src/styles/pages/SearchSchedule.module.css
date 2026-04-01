@@ -1,0 +1,193 @@
+.page {
+  composes: page from "../shared/PageShell.module.css";
+  padding-bottom: 8rem;
+}
+
+.containerSm {
+  composes: containerSm from "../shared/PageShell.module.css";
+}
+
+.fieldLabel {
+  composes: fieldLabel from "../shared/FormBase.module.css";
+}
+
+.requiredBadge {
+  composes: requiredBadge from "../shared/FormBase.module.css";
+}
+
+.fieldHelp {
+  composes: fieldHelp from "../shared/FormBase.module.css";
+}
+
+.title {
+  margin: 0 0 2rem;
+}
+
+.card {
+  padding: 1.5rem;
+  border-radius: 1.75rem;
+  background: #ffffff;
+  box-shadow: 0 20px 40px -28px rgba(15, 23, 42, 0.18);
+}
+
+.content {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.dateGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.dateOption {
+  padding: 0.75rem 0.5rem;
+  border-radius: 1.5rem;
+  background: #f8fafc;
+  text-align: center;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.dateOption:hover {
+  background: #f1f5f9;
+}
+
+.dateOptionActive {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  box-shadow: 0 16px 28px -20px rgba(37, 99, 235, 0.45);
+}
+
+.dateWeekday {
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.dateNumberMuted {
+  color: #0f172a;
+}
+
+.dateLabel {
+  color: #64748b;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.timeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.timeOption {
+  padding: 1rem 0.75rem;
+  border-radius: 1.5rem;
+  background: #f8fafc;
+  text-align: center;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.timeOption:hover {
+  background: #f1f5f9;
+}
+
+.timeOptionActive {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  box-shadow: 0 16px 28px -20px rgba(37, 99, 235, 0.45);
+}
+
+.timeIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0 auto 0.25rem;
+}
+
+.timeLabel {
+  font-size: 0.875rem;
+}
+
+.passengerShell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: #f8fafc;
+}
+
+.passengerIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #0ea5e9;
+}
+
+.passengerControls {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 1rem;
+}
+
+.counterButton {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 8px 18px -16px rgba(15, 23, 42, 0.22);
+  font-size: 1.125rem;
+  transition: background-color 0.2s ease;
+}
+
+.counterButton:hover {
+  background: #f8fafc;
+}
+
+.counterValue {
+  flex: 1;
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.actionBar {
+  position: fixed;
+  right: 0;
+  bottom: 5rem;
+  left: 0;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.actionButton {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  background: linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 1.125rem;
+  box-shadow: 0 24px 44px -26px rgba(37, 99, 235, 0.56);
+  transition: box-shadow 0.2s ease;
+}
+
+.actionButton:hover {
+  box-shadow: 0 28px 52px -28px rgba(37, 99, 235, 0.62);
+}
+
+@media (min-width: 768px) {
+  .actionBar {
+    bottom: 2rem;
+  }
+}

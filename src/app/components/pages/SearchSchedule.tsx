@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { Sun, Sunrise, Sunset, Users } from "lucide-react";
 import { useNavigate } from "@/lib/router";
@@ -12,6 +13,7 @@ import {
   getTodayDateKey,
 } from "@/lib/ferry";
 import type { TimeFilter } from "@/lib/app-types";
+import styles from "@/styles/pages/SearchSchedule.module.css";
 
 export function SearchSchedule() {
   const navigate = useNavigate();
@@ -54,97 +56,92 @@ export function SearchSchedule() {
   };
 
   return (
-    <div className="booking-page">
-      <div className="booking-page__container booking-page__container--sm">
-        <h1 className="text-2xl mb-8">ค้นหารอบเรือ</h1>
+    <div className={styles.page}>
+      <div className={styles.containerSm}>
+        <h1 className={styles.title}>ค้นหารอบเรือ</h1>
 
-        <div className="bg-white rounded-3xl shadow-lg p-6 space-y-6">
-          <div>
-            <label className="field-label">
-              เลือกวันที่
-              <span className="field-label__required">จำเป็น</span>
-            </label>
-            <div className="grid grid-cols-7 gap-2 mb-4">
-              {dateOptions.map((option) => {
-                const isSelected = option.key === selectedDate;
+        <div className={styles.card}>
+          <div className={styles.content}>
+            <div>
+              <label className={styles.fieldLabel}>
+                เลือกวันที่
+                <span className={styles.requiredBadge}>จำเป็น</span>
+              </label>
+              <div className={styles.dateGrid}>
+                {dateOptions.map((option) => {
+                  const isSelected = option.key === selectedDate;
 
-                return (
-                  <button
-                    key={option.key}
-                    onClick={() => setSelectedDate(option.key)}
-                    className={`py-3 px-2 rounded-2xl text-center transition-all ${
-                      isSelected
-                        ? "bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-white shadow-md"
-                        : "bg-gray-50 hover:bg-gray-100"
-                    }`}
-                  >
-                    <div className="text-xs mb-1 opacity-80">{option.weekday}</div>
-                    <div className={isSelected ? "" : "text-gray-900"}>{option.date.getDate()}</div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="text-center text-sm text-gray-500">{formatThaiDate(selectedDate)}</div>
-            <div className="field-help">เลือกรอบเดินทางล่วงหน้าได้จากวันที่แสดงในระบบ</div>
-          </div>
-
-          <div>
-            <label className="field-label">ช่วงเวลา</label>
-            <div className="grid grid-cols-4 gap-3">
-              {timeFilters.map((filter) => {
-                const isSelected = selectedTime === filter.id;
-                const Icon = filter.icon;
-
-                return (
-                  <button
-                    key={filter.id}
-                    onClick={() => setSelectedTime(filter.id)}
-                    className={`py-4 px-3 rounded-2xl text-center transition-all ${
-                      isSelected
-                        ? "bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] text-white shadow-md"
-                        : "bg-gray-50 hover:bg-gray-100"
-                    }`}
-                  >
-                    {Icon ? <Icon className="w-5 h-5 mx-auto mb-1" /> : null}
-                    <div className="text-sm">{filter.label}</div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="field-help">ถ้าไม่เลือก ระบบจะแสดงทุกรอบที่มีในวันนั้น</div>
-          </div>
-
-          <div>
-            <label className="field-label">
-              จำนวนผู้โดยสาร
-              <span className="field-label__required">จำเป็น</span>
-            </label>
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50">
-              <Users className="w-5 h-5 text-[#0EA5E9]" />
-              <div className="flex items-center gap-4 flex-1">
-                <button
-                  onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                  className="w-12 h-12 rounded-xl bg-white hover:bg-gray-100 flex items-center justify-center transition-colors shadow-sm text-lg"
-                >
-                  −
-                </button>
-                <span className="text-xl flex-1 text-center">{passengers} คน</span>
-                <button
-                  onClick={() => setPassengers(Math.min(10, passengers + 1))}
-                  className="w-12 h-12 rounded-xl bg-white hover:bg-gray-100 flex items-center justify-center transition-colors shadow-sm text-lg"
-                >
-                  +
-                </button>
+                  return (
+                    <button
+                      key={option.key}
+                      onClick={() => setSelectedDate(option.key)}
+                      className={clsx(styles.dateOption, isSelected && styles.dateOptionActive)}
+                    >
+                      <div className={styles.dateWeekday}>{option.weekday}</div>
+                      <div className={!isSelected ? styles.dateNumberMuted : undefined}>{option.date.getDate()}</div>
+                    </button>
+                  );
+                })}
               </div>
+              <div className={styles.dateLabel}>{formatThaiDate(selectedDate)}</div>
+              <div className={styles.fieldHelp}>เลือกรอบเดินทางล่วงหน้าได้จากวันที่แสดงในระบบ</div>
             </div>
-            <div className="field-help">จำนวนนี้จะถูกใช้เป็นค่าเริ่มต้นของจำนวนผู้โดยสารในขั้นตอนถัดไป</div>
+
+            <div>
+              <label className={styles.fieldLabel}>ช่วงเวลา</label>
+              <div className={styles.timeGrid}>
+                {timeFilters.map((filter) => {
+                  const isSelected = selectedTime === filter.id;
+                  const Icon = filter.icon;
+
+                  return (
+                    <button
+                      key={filter.id}
+                      onClick={() => setSelectedTime(filter.id)}
+                      className={clsx(styles.timeOption, isSelected && styles.timeOptionActive)}
+                    >
+                      {Icon ? <Icon className={styles.timeIcon} /> : null}
+                      <div className={styles.timeLabel}>{filter.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className={styles.fieldHelp}>ถ้าไม่เลือก ระบบจะแสดงทุกรอบที่มีในวันนั้น</div>
+            </div>
+
+            <div>
+              <label className={styles.fieldLabel}>
+                จำนวนผู้โดยสาร
+                <span className={styles.requiredBadge}>จำเป็น</span>
+              </label>
+              <div className={styles.passengerShell}>
+                <Users className={styles.passengerIcon} />
+                <div className={styles.passengerControls}>
+                  <button
+                    onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                    className={styles.counterButton}
+                  >
+                    −
+                  </button>
+                  <span className={styles.counterValue}>{passengers} คน</span>
+                  <button
+                    onClick={() => setPassengers(Math.min(10, passengers + 1))}
+                    className={styles.counterButton}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className={styles.fieldHelp}>จำนวนนี้จะถูกใช้เป็นค่าเริ่มต้นของจำนวนผู้โดยสารในขั้นตอนถัดไป</div>
+            </div>
+
           </div>
         </div>
 
-        <div className="fixed bottom-20 md:bottom-8 left-0 right-0 px-4 max-w-2xl mx-auto">
+        <div className={styles.actionBar}>
           <button
             onClick={handleSearch}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white shadow-xl hover:shadow-2xl transition-shadow text-lg"
+            className={styles.actionButton}
           >
             ค้นหารอบเรือ
           </button>

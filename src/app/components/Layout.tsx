@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { Bell, FileText, Home, Ship, User } from "lucide-react";
 import { Link, useLocation } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
-import styles from "./Layout.module.css";
+import styles from "@/styles/components/Layout.module.css";
 
 type LayoutProps = {
   children: ReactNode;
@@ -62,7 +62,7 @@ export function Layout({ children }: LayoutProps) {
         <div className={styles.desktopInner}>
           <Link href="/" className={styles.brand}>
             <div className={styles.brandIcon}>
-              <Ship className="h-6 w-6 text-white" />
+              <Ship className={styles.brandSymbol} />
             </div>
             <span className={styles.brandTitle}>Ferry Ticket</span>
           </Link>
@@ -94,7 +94,7 @@ export function Layout({ children }: LayoutProps) {
                       className={styles.desktopProfileAvatarImage}
                     />
                   ) : (
-                    <User className="h-4 w-4" />
+                    <User className={styles.avatarIcon} />
                   )}
                 </span>
                 <span className={styles.desktopProfileName}>{desktopProfileName}</span>
@@ -117,7 +117,7 @@ export function Layout({ children }: LayoutProps) {
                 href={item.href}
                 className={clsx(styles.mobileLink, isActive(pathname, item.paths) && styles.mobileLinkActive)}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className={styles.mobileIcon} />
                 <span className={styles.mobileLabel}>{item.label}</span>
               </Link>
             );

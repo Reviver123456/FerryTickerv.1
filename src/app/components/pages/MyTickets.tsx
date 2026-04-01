@@ -1,11 +1,13 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { getTicketQrImageUrl } from "@/lib/ferry";
-import { getBookingStatusMeta, getTicketViewBookings, type TicketTab } from "@/lib/ticket-view";
+import { getBookingStatusMeta, getTicketViewBookings, type BookingStatusTone, type TicketTab } from "@/lib/ticket-view";
 import { QrCode, Clock, ChevronRight } from "lucide-react";
+import styles from "@/styles/pages/MyTickets.module.css";
 
 type TicketCardItem = {
   key: string;
@@ -20,7 +22,7 @@ type TicketCardItem = {
   displayTime: string;
   qrImageUrl?: string;
   statusLabel: string;
-  statusClassName: string;
+  statusTone: BookingStatusTone;
   tab: TicketTab;
 };
 
@@ -61,7 +63,7 @@ export function MyTickets() {
               displayTime: resolveDisplayValue(record.scheduleTime),
               qrImageUrl: undefined,
               statusLabel: statusMeta.label,
-              statusClassName: statusMeta.badgeClassName,
+              statusTone: statusMeta.badgeTone,
               tab: statusMeta.tab,
             },
           ];
@@ -86,7 +88,7 @@ export function MyTickets() {
             displayTime: resolveDisplayValue(issuedTicket.travelTime, record.scheduleTime),
             qrImageUrl: getTicketQrImageUrl(issuedTicket),
             statusLabel: statusMeta.label,
-            statusClassName: statusMeta.badgeClassName,
+            statusTone: statusMeta.badgeTone,
             tab: statusMeta.tab,
           };
         });
@@ -109,44 +111,51 @@ export function MyTickets() {
   }, [unusedTickets.length, usedTickets.length]);
 
   const tickets = activeTab === "unused" ? unusedTickets : usedTickets;
+  const getStatusBadgeClassName = (tone: BookingStatusTone) => {
+    if (tone === "used") {
+      return styles.statusUsed;
+    }
+
+    if (tone === "pending") {
+      return styles.statusPending;
+    }
+
+    if (tone === "cancelled") {
+      return styles.statusCancelled;
+    }
+
+    return styles.statusConfirmed;
+  };
 
   return (
-    <div className="booking-page">
-      <div className="booking-page__container booking-page__container--md">
-        <h1 className="text-2xl mb-6">ตั๋วของฉัน</h1>
+    <div className={styles.page}>
+      <div className={styles.containerMd}>
+        <h1 className={styles.pageTitle}>ตั๋วของฉัน</h1>
 
-        <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 mb-6 inline-flex">
+        <div className={styles.tabs}>
           <button
             type="button"
             onClick={() => setActiveTab("unused")}
-            className={`px-6 py-3 rounded-xl transition-all ${
-              activeTab === "unused"
-                ? "bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white shadow-md"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={clsx(styles.tabButton, activeTab === "unused" && styles.tabButtonActive)}
           >
             ยังไม่ใช้งาน
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("used")}
-            className={`px-6 py-3 rounded-xl transition-all ${
-              activeTab === "used"
-                ? "bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white shadow-md"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={clsx(styles.tabButton, activeTab === "used" && styles.tabButtonActive)}
           >
             ใช้งานแล้ว
           </button>
         </div>
 
         {tickets.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 shadow-sm border border-gray-100 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <QrCode className="w-10 h-10 text-gray-400" />
+          <div className={styles.emptyCard}>
+            <div className={styles.emptyIconWrap}>
+              <QrCode className={styles.emptyIcon} />
             </div>
-            <h3 className="text-lg mb-2">{authUser ? "ยังไม่มีตั๋ว" : "ยังไม่ได้เข้าสู่ระบบ"}</h3>
-            <p className="text-gray-600 text-sm mb-6">
+            <h3 className={styles.emptyTitle}>{authUser ? "ยังไม่มีตั๋ว" : "ยังไม่ได้เข้าสู่ระบบ"}</h3>
+            <p className={styles.emptyText}>
               {authUser
                 ? activeTab === "unused"
                   ? "ยังไม่พบตั๋วที่ผูกกับบัญชีนี้"
@@ -157,7 +166,7 @@ export function MyTickets() {
               activeTab === "unused" && (
                 <button
                   onClick={() => navigate("/")}
-                  className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg transition-shadow"
+                  className={styles.primaryButton}
                 >
                   จองตั๋วเลย
                 </button>
@@ -165,14 +174,14 @@ export function MyTickets() {
             ) : (
               <button
                 onClick={() => navigate("/login?redirect=/my-tickets")}
-                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white hover:shadow-lg transition-shadow"
+                className={styles.primaryButton}
               >
                 เข้าสู่ระบบ
               </button>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className={styles.list}>
             {tickets.map((ticket) => (
               <div
                 key={ticket.key}
@@ -188,39 +197,39 @@ export function MyTickets() {
                       : `/ticket/${ticket.routeId}?bookingNo=${encodeURIComponent(ticket.bookingNo)}`,
                   );
                 }}
-                className="bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                className={styles.card}
               >
-                <div className="flex">
-                  <div className="w-32 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className={styles.cardInner}>
+                  <div className={styles.qrPanel}>
                     {ticket.qrImageUrl ? (
                       <img
                         src={ticket.qrImageUrl}
                         alt={`QR ของ ${ticket.displayRef}`}
-                        className="w-20 h-20 object-contain"
+                        className={styles.qrImage}
                       />
                     ) : (
-                      <QrCode className="w-16 h-16 text-gray-400" />
+                      <QrCode className={styles.qrIcon} />
                     )}
                   </div>
 
-                  <div className="flex-1 p-6">
-                    <div className="flex items-start justify-between mb-4">
+                  <div className={styles.content}>
+                    <div className={styles.topRow}>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">{ticket.displayRef}</div>
-                        <h3 className="text-lg mb-1">{ticket.displayTitle}</h3>
-                        <div className="text-sm text-gray-500 mb-2">{ticket.displayDate}</div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
+                        <div className={styles.refText}>{ticket.displayRef}</div>
+                        <h3 className={styles.cardTitle}>{ticket.displayTitle}</h3>
+                        <div className={styles.cardDate}>{ticket.displayDate}</div>
+                        <div className={styles.timeRow}>
+                          <div className={styles.timeRow}>
+                            <Clock className={styles.timeIcon} />
                             {ticket.displayTime}
                           </div>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                      <ChevronRight className={styles.chevronIcon} />
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm px-4 py-2 rounded-full ${ticket.statusClassName}`}>
+                    <div className={styles.bottomRow}>
+                      <span className={clsx(styles.statusBadge, getStatusBadgeClassName(ticket.statusTone))}>
                         {ticket.statusLabel}
                       </span>
                     </div>

@@ -127,6 +127,11 @@
   border-radius: 1rem;
 }
 
+.itemIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 .iconPayment {
   background: #dbeafe;
   color: #2563eb;
@@ -224,6 +229,11 @@
   border-radius: 1.5rem;
   background: #eff6ff;
   color: #2563eb;
+}
+
+.emptyIconSymbol {
+  width: 2rem;
+  height: 2rem;
 }
 
 .emptyTitle {

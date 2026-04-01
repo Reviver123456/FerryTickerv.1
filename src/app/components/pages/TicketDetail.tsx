@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useNavigate } from "@/lib/router";
@@ -9,6 +10,7 @@ import { findTicketViewBooking, findTicketViewBookingByBookingNo, getBookingStat
 import { QrCode, Calendar, Clock, User, Download, Share2, ChevronLeft, Printer } from "lucide-react";
 import type { TicketViewBooking } from "@/lib/ticket-view";
 import type { TicketRecord } from "@/lib/app-types";
+import styles from "@/styles/pages/TicketDetail.module.css";
 
 type TicketEntry = {
   ticketNo: string;
@@ -958,6 +960,25 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
 
     return getBookingStatusMeta(activeBooking);
   }, [activeBooking]);
+  const statusBadgeClassName = useMemo(() => {
+    if (!statusMeta) {
+      return styles.statusConfirmed;
+    }
+
+    if (statusMeta.badgeTone === "used") {
+      return styles.statusUsed;
+    }
+
+    if (statusMeta.badgeTone === "pending") {
+      return styles.statusPending;
+    }
+
+    if (statusMeta.badgeTone === "cancelled") {
+      return styles.statusCancelled;
+    }
+
+    return styles.statusConfirmed;
+  }, [statusMeta]);
 
   const handleDownload = () => {
     if (!activeBooking || !displayTicket || !statusMeta) {
@@ -1073,19 +1094,19 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
 
   if (!activeBooking || !resolvedTicket || !statusMeta) {
     return (
-      <div className="booking-page">
-        <div className="booking-page__container booking-page__container--sm">
+      <div className={styles.page}>
+        <div className={styles.containerSm}>
           <button
             onClick={() => navigate("/my-tickets")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+            className={styles.backButton}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className={styles.backIcon} />
             <span>กลับ</span>
           </button>
 
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-center">
-            <h1 className="text-2xl mb-3">ยังไม่มีรายละเอียดตั๋ว</h1>
-            <p className="text-sm text-gray-600">กลับไปที่หน้า "ตั๋วของฉัน" แล้วเลือกตั๋วอีกครั้ง</p>
+          <div className={styles.emptyCard}>
+            <h1 className={styles.emptyTitle}>ยังไม่มีรายละเอียดตั๋ว</h1>
+            <p className={styles.emptyText}>กลับไปที่หน้า "ตั๋วของฉัน" แล้วเลือกตั๋วอีกครั้ง</p>
           </div>
         </div>
       </div>
@@ -1093,130 +1114,130 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
   }
 
   return (
-    <div className="booking-page">
-      <div className="booking-page__container booking-page__container--sm">
+    <div className={styles.page}>
+      <div className={styles.containerSm}>
         <button
           onClick={() => navigate("/my-tickets")}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+          className={styles.backButton}
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className={styles.backIcon} />
           <span>กลับ</span>
         </button>
 
-        <div className="flex items-center justify-center mb-6">
-          <span className={`px-6 py-2 rounded-full text-sm ${statusMeta.badgeClassName}`}>
+        <div className={styles.statusWrap}>
+          <span className={clsx(styles.statusBadge, statusBadgeClassName)}>
             {statusMeta.label}
           </span>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-6">
-          <div className="bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] p-6 text-white text-center">
-            <div className="text-sm mb-2 opacity-90">หมายเลขตั๋ว</div>
-            <div className="text-2xl tracking-wider">{resolvedTicket.ticketNo}</div>
+        <div className={styles.ticketCard}>
+          <div className={styles.ticketHero}>
+            <div className={styles.ticketHeroLabel}>หมายเลขตั๋ว</div>
+            <div className={styles.ticketHeroValue}>{resolvedTicket.ticketNo}</div>
           </div>
 
-          <div className="p-8">
-            <div className="w-72 h-72 mx-auto bg-white border-4 border-gray-100 rounded-3xl flex items-center justify-center mb-6 shadow-inner overflow-hidden">
+          <div className={styles.ticketBody}>
+            <div className={styles.qrShell}>
               {displayQrImageUrl ? (
                 <img
                   src={displayQrImageUrl}
                   alt={`QR ของ ${resolvedTicket.ticketNo}`}
-                  className="w-56 h-56 object-contain"
+                  className={styles.qrImage}
                 />
               ) : (
-                <QrCode className="w-56 h-56 text-gray-300" />
+                <QrCode className={styles.qrPlaceholder} />
               )}
             </div>
 
-            <div className="text-center text-sm text-gray-600 mb-6">
+            <div className={styles.qrHint}>
               {resolvedTicket.qrToken ? "แสดง QR Code นี้ที่ท่าเรือก่อนขึ้นเรือ" : "QR ของตั๋วจะปรากฏเมื่อการออกตั๋วเสร็จสมบูรณ์"}
             </div>
 
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
-          <h2 className="text-lg mb-4">รายละเอียดผู้โดยสาร</h2>
+        <div className={styles.sectionCard}>
+          <h2 className={styles.sectionTitle}>รายละเอียดผู้โดยสาร</h2>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] flex items-center justify-center flex-shrink-0">
-                <User className="w-5 h-5 text-white" />
+          <div className={styles.detailList}>
+            <div className={styles.passengerRow}>
+              <div className={styles.passengerIconWrap}>
+                <User className={styles.passengerIcon} />
               </div>
-              <div className="flex-1">
-                <div className="text-sm">{displayTicket?.passengerName || displayPassengerName}</div>
-                <div className="text-xs text-gray-600">{passengerTypeLabel}</div>
+              <div className={styles.passengerContent}>
+                <div className={styles.passengerName}>{displayTicket?.passengerName || displayPassengerName}</div>
+                <div className={styles.passengerMeta}>{passengerTypeLabel}</div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50">
-              <Calendar className="w-5 h-5 text-[#0EA5E9]" />
+            <div className={styles.detailRow}>
+              <Calendar className={styles.detailIcon} />
               <div>
-                <div className="text-xs text-gray-600">วันที่</div>
+                <div className={styles.detailLabel}>วันที่</div>
                 <div>{displayTravelDate}</div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50">
-              <Clock className="w-5 h-5 text-[#0EA5E9]" />
+            <div className={styles.detailRow}>
+              <Clock className={styles.detailIcon} />
               <div>
-                <div className="text-xs text-gray-600">เวลา</div>
+                <div className={styles.detailLabel}>เวลา</div>
                 <div>{displayTravelTime}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
-          <h2 className="text-lg mb-4">ข้อมูลผู้จอง</h2>
+        <div className={styles.contactCard}>
+          <h2 className={styles.sectionTitle}>ข้อมูลผู้จอง</h2>
 
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <span className="text-gray-600">ชื่อ</span>
-              <span className="text-right">{activeBooking.contactName || "-"}</span>
+          <div className={styles.contactList}>
+            <div className={styles.contactRow}>
+              <span className={styles.contactLabel}>ชื่อ</span>
+              <span className={styles.contactValue}>{activeBooking.contactName || "-"}</span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-gray-600">เบอร์โทร</span>
-              <span className="text-right">{activeBooking.contactPhone || "-"}</span>
+            <div className={styles.contactRow}>
+              <span className={styles.contactLabel}>เบอร์โทร</span>
+              <span className={styles.contactValue}>{activeBooking.contactPhone || "-"}</span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-gray-600">อีเมล</span>
-              <span className="text-sm text-right break-all">{activeBooking.contactEmail || "-"}</span>
+            <div className={styles.contactRow}>
+              <span className={styles.contactLabel}>อีเมล</span>
+              <span className={clsx(styles.contactValue, styles.breakAll)}>{activeBooking.contactEmail || "-"}</span>
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-gray-600">วันที่ออกตั๋ว</span>
-              <span className="text-sm text-right">{issuedDateLabel}</span>
+            <div className={styles.contactRow}>
+              <span className={styles.contactLabel}>วันที่ออกตั๋ว</span>
+              <span className={styles.contactValue}>{issuedDateLabel}</span>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-gray-200 mt-4">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">ยอดชำระ</span>
-              <span className="text-2xl text-[#0EA5E9]">฿{formatCurrency(selectedTicketUnitPrice)}</span>
+          <div className={styles.summaryDivider}>
+            <div className={styles.summaryRow}>
+              <span className={styles.summaryLabel}>ยอดชำระ</span>
+              <span className={styles.summaryAmount}>฿{formatCurrency(selectedTicketUnitPrice)}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-3 mb-24">
+        <div className={styles.actions}>
           <button
             onClick={handleDownload}
-            className="flex-1 py-4 rounded-2xl bg-white border-2 border-gray-200 hover:border-[#0EA5E9] transition-all flex items-center justify-center gap-2"
+            className={styles.actionButton}
           >
-            <Download className="w-5 h-5" />
+            <Download className={styles.actionIcon} />
             <span>ดาวน์โหลด</span>
           </button>
           <button
             onClick={handlePrint}
-            className="flex-1 py-4 rounded-2xl bg-white border-2 border-gray-200 hover:border-[#0EA5E9] transition-all flex items-center justify-center gap-2"
+            className={styles.actionButton}
           >
-            <Printer className="w-5 h-5" />
+            <Printer className={styles.actionIcon} />
             <span>ปริ้น</span>
           </button>
           <button
             onClick={() => void handleShare()}
-            className="flex-1 py-4 rounded-2xl bg-white border-2 border-gray-200 hover:border-[#0EA5E9] transition-all flex items-center justify-center gap-2"
+            className={styles.actionButton}
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className={styles.actionIcon} />
             <span>แชร์</span>
           </button>
         </div>

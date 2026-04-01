@@ -6,7 +6,7 @@ import { Eye, EyeOff, KeyRound, Mail } from "lucide-react";
 import { Link, useNavigate } from "@/lib/router";
 import { isValidEmail, loginUser } from "@/lib/ferry";
 import { useAppContext } from "@/app/providers/AppProvider";
-import styles from "./Auth.module.css";
+import styles from "@/styles/pages/Login.module.css";
 
 type FormErrors = {
   email?: string;
@@ -123,7 +123,7 @@ export function Login() {
             <div className={styles.field}>
               <div className={styles.labelRow}>
                 <label className={styles.label} htmlFor="login-email">
-                  <Mail className="w-4 h-4" />
+                  <Mail className={styles.iconSm} />
                   อีเมล
                 </label>
                 <span className={styles.required}>จำเป็น</span>
@@ -143,7 +143,7 @@ export function Login() {
             <div className={styles.field}>
               <div className={styles.labelRow}>
                 <label className={styles.label} htmlFor="login-password">
-                  <KeyRound className="w-4 h-4" />
+                  <KeyRound className={styles.iconSm} />
                   รหัสผ่าน
                 </label>
                 <span className={styles.required}>จำเป็น</span>
@@ -165,13 +165,13 @@ export function Login() {
                   aria-label={isPasswordVisible ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
                   aria-pressed={isPasswordVisible}
                 >
-                  {isPasswordVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {isPasswordVisible ? <EyeOff className={styles.iconSm} /> : <Eye className={styles.iconSm} />}
                 </button>
               </div>
               {errors.password ? <div className={styles.error}>{errors.password}</div> : null}
             </div>
 
-            <div className="text-right">
+            <div className={styles.textRight}>
               <Link href="/forgot-password" className={styles.inlineLink}>
                 ลืมรหัสผ่าน?
               </Link>

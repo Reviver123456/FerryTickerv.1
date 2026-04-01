@@ -1,7 +1,9 @@
 "use client";
 
+import clsx from "clsx";
 import { useState } from "react";
 import { Mail, Phone, MessageCircle, ChevronRight, HelpCircle } from "lucide-react";
+import styles from "@/styles/pages/Help.module.css";
 
 export function Help() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -74,29 +76,28 @@ export function Help() {
   ];
 
   return (
-    <div className="booking-page">
-      <div className="booking-page__container booking-page__container--md">
-        <div className="mb-8">
-          <h1 className="text-2xl mb-2">ศูนย์ช่วยเหลือ</h1>
-          <p className="text-gray-600 text-sm">คำถามที่พบบ่อยและช่องทางติดต่อ</p>
+    <div className={styles.page}>
+      <div className={styles.containerMd}>
+        <div className={styles.header}>
+          <h1 className={styles.headerTitle}>ศูนย์ช่วยเหลือ</h1>
+          <p className={styles.headerText}>คำถามที่พบบ่อยและช่องทางติดต่อ</p>
         </div>
 
-        {/* Contact Methods */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <div className={styles.contactGrid}>
           {contactMethods.map((method, idx) => {
             const Icon = method.icon;
             return (
               <div
                 key={idx}
-                className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer text-center"
+                className={styles.contactCard}
               >
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#0EA5E9] to-[#2563EB] flex items-center justify-center">
-                  <Icon className="w-8 h-8 text-white" />
+                <div className={styles.contactIconWrap}>
+                  <Icon className={styles.contactIcon} />
                 </div>
-                <h3 className="mb-2">{method.title}</h3>
-                <div className="text-sm text-[#0EA5E9] mb-2">{method.detail}</div>
-                <p className="text-xs text-gray-600 mb-4">{method.description}</p>
-                <button className="text-sm text-[#0EA5E9] hover:text-[#2563EB] transition-colors">
+                <h3 className={styles.contactTitle}>{method.title}</h3>
+                <div className={styles.contactDetail}>{method.detail}</div>
+                <p className={styles.contactDescription}>{method.description}</p>
+                <button className={styles.contactButton}>
                   {method.action}
                 </button>
               </div>
@@ -104,32 +105,29 @@ export function Help() {
           })}
         </div>
 
-        {/* FAQ Section */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-24">
-          <div className="flex items-center gap-2 mb-6">
-            <HelpCircle className="w-6 h-6 text-[#0EA5E9]" />
-            <h2 className="text-xl">คำถามที่พบบ่อย</h2>
+        <div className={styles.faqCard}>
+          <div className={styles.faqHeader}>
+            <HelpCircle className={styles.faqHeaderIcon} />
+            <h2 className={styles.faqTitle}>คำถามที่พบบ่อย</h2>
           </div>
 
-          <div className="space-y-3">
+          <div className={styles.faqList}>
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="border border-gray-100 rounded-2xl overflow-hidden"
+                className={styles.faqItem}
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full p-5 text-left hover:bg-gray-50 transition-colors flex items-center justify-between"
+                  className={styles.faqQuestion}
                 >
-                  <span className="pr-4">{faq.question}</span>
+                  <span className={styles.faqQuestionText}>{faq.question}</span>
                   <ChevronRight
-                    className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${
-                      openFaq === idx ? "rotate-90" : ""
-                    }`}
+                    className={clsx(styles.faqChevron, openFaq === idx && styles.faqChevronOpen)}
                   />
                 </button>
                 {openFaq === idx && (
-                  <div className="px-5 pb-5 text-sm text-gray-600 border-t border-gray-100 pt-4 bg-gray-50">
+                  <div className={styles.faqAnswer}>
                     {faq.answer}
                   </div>
                 )}

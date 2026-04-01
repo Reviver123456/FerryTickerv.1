@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { Mail, Phone, User } from "lucide-react";
 import { useNavigate } from "@/lib/router";
@@ -14,6 +15,7 @@ import {
   updateBookingInfo,
 } from "@/lib/ferry";
 import type { ContactInfo, PassengerForm, PassengerType } from "@/lib/app-types";
+import styles from "@/styles/pages/PassengerInfo.module.css";
 
 type FormErrors = Record<string, string>;
 type ExpectedPassengerDetail = {
@@ -162,16 +164,16 @@ export function PassengerInfo() {
 
   if (!booking.draft) {
     return (
-      <div className="booking-page">
-        <div className="booking-page__container booking-page__container--sm">
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-            <h1 className="text-2xl mb-3">ยังไม่มี booking draft</h1>
-            <p className="text-sm text-gray-600 mb-4">
+      <div className={styles.page}>
+        <div className={styles.containerSm}>
+          <div className={styles.emptyCard}>
+            <h1>ยังไม่มี booking draft</h1>
+            <p className={styles.emptyText}>
               เลือกประเภทตั๋วให้เรียบร้อยก่อน ระบบจะสร้าง `booking_no` เพื่อใช้ส่งข้อมูลผู้โดยสาร
             </p>
             <button
               onClick={() => navigate("/select-ticket")}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white"
+              className={styles.primaryButton}
             >
               กลับไปเลือกตั๋ว
             </button>
@@ -182,83 +184,84 @@ export function PassengerInfo() {
   }
 
   return (
-    <div className="booking-page">
-      <div className="booking-page__container booking-page__container--sm">
-        <div className="mb-8">
-          <h1 className="text-2xl mb-2">กรอกข้อมูลผู้โดยสาร</h1>
-          <p className="text-gray-600 text-sm">
+    <div className={styles.page}>
+      <div className={styles.containerSm}>
+        <div className={styles.header}>
+          <h1 className={styles.headerTitle}>กรอกข้อมูลผู้โดยสาร</h1>
+          <p className={styles.headerMeta}>
             Booking No: {booking.draft.bookingNo} • ผู้โดยสารทั้งหมด {totalPassengers} คน
           </p>
         </div>
 
-        {submitError ? <div className="error-banner mb-6">{submitError}</div> : null}
+        {submitError ? <div className={styles.errorBanner}>{submitError}</div> : null}
 
-        <div className="space-y-6 mb-32">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-            <h2 className="text-lg mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-[#0EA5E9]" />
+        <div className={styles.content}>
+          <div className={styles.sectionCard}>
+            <h2 className={styles.sectionHeading}>
+              <User className={styles.sectionIcon} />
               ข้อมูลผู้จอง
             </h2>
 
-            <div className="space-y-4">
+            <div className={styles.fieldList}>
               <div>
-                <label className="field-label">
+                <label className={styles.fieldLabel}>
                   ชื่อ-นามสกุล
                 </label>
                 <input
                   type="text"
                   value={contactInfo.fullName}
                   placeholder="ชื่อ-นามสกุลผู้จอง"
-                  className={`form-input bg-gray-100 text-gray-700 cursor-not-allowed ${errors.contactFullName ? "form-input--error" : ""}`}
+                  className={clsx(styles.input, styles.readonlyInput, errors.contactFullName && styles.inputError)}
                   readOnly
                 />
-                {errors.contactFullName ? <div className="field-error">{errors.contactFullName}</div> : null}
+                {errors.contactFullName ? <div className={styles.fieldError}>{errors.contactFullName}</div> : null}
               </div>
 
               <div>
-                <label className="field-label">
-                  <Phone className="w-4 h-4" />
+                <label className={styles.fieldLabel}>
+                  <Phone className={styles.fieldIcon} />
                   เบอร์โทรศัพท์
                 </label>
                 <input
                   type="tel"
                   value={contactInfo.phone}
                   placeholder="กรอกเบอร์โทรศัพท์"
-                  className={`form-input bg-gray-100 text-gray-700 cursor-not-allowed ${errors.contactPhone ? "form-input--error" : ""}`}
+                  className={clsx(styles.input, styles.readonlyInput, errors.contactPhone && styles.inputError)}
                   readOnly
                 />
-                {errors.contactPhone ? <div className="field-error">{errors.contactPhone}</div> : null}
+                {errors.contactPhone ? <div className={styles.fieldError}>{errors.contactPhone}</div> : null}
               </div>
 
               <div>
-                <label className="field-label">
-                  <Mail className="w-4 h-4" />
+                <label className={styles.fieldLabel}>
+                  <Mail className={styles.fieldIcon} />
                   อีเมล
                 </label>
                 <input
                   type="email"
                   value={contactInfo.email}
                   placeholder="example@email.com"
-                  className={`form-input bg-gray-100 text-gray-700 cursor-not-allowed ${errors.contactEmail ? "form-input--error" : ""}`}
+                  className={clsx(styles.input, styles.readonlyInput, errors.contactEmail && styles.inputError)}
                   readOnly
                 />
-                {errors.contactEmail ? <div className="field-error">{errors.contactEmail}</div> : null}
+                {errors.contactEmail ? <div className={styles.fieldError}>{errors.contactEmail}</div> : null}
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg flex items-center gap-2">
-                <User className="w-5 h-5 text-[#0EA5E9]" />
+          <div className={styles.sectionCard}>
+            <div className={styles.sectionHeadingRow}>
+              <h2 className={styles.sectionHeading}>
+                <User className={styles.sectionIcon} />
                 ข้อมูลผู้โดยสาร
               </h2>
-              <span className="text-sm text-gray-500">{totalPassengers} คน</span>
+              <span className={styles.sectionCount}>{totalPassengers} คน</span>
             </div>
 
-            <div className="space-y-4">
+            <div className={styles.passengerList}>
               {passengers.map((passenger, idx) => (
-                <div key={passenger.id} className="p-4 rounded-2xl bg-gray-50 space-y-3">
+                <div key={passenger.id} className={styles.passengerCard}>
+                  <div className={styles.passengerInner}>
                   {(() => {
                     const ticketDetail = expectedPassengers[idx];
                     const ticketName = ticketDetail?.ticketName || getPassengerTypeLabel(passenger);
@@ -266,77 +269,74 @@ export function PassengerInfo() {
 
                     return (
                       <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">ผู้โดยสาร {idx + 1}</span>
-                    <span className="field-label__required">{ticketName}</span>
-                  </div>
+                        <div className={styles.passengerHeader}>
+                          <span className={styles.passengerIndex}>ผู้โดยสาร {idx + 1}</span>
+                          <span className={styles.ticketBadge}>{ticketName}</span>
+                        </div>
 
-                  <div>
-                    <label className="field-label">
-                      ชื่อ-นามสกุลผู้โดยสาร
-                      <span className="field-label__required">จำเป็น</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={passenger.fullName}
-                      onChange={(event) => updatePassenger(passenger.id, "fullName", event.target.value)}
-                      placeholder="ชื่อ-นามสกุล"
-                      className={`form-input ${errors[`passenger-${passenger.id}`] ? "form-input--error" : ""}`}
-                    />
-                    {errors[`passenger-${passenger.id}`] ? (
-                      <div className="field-error">{errors[`passenger-${passenger.id}`]}</div>
-                    ) : null}
-                  </div>
+                        <div>
+                          <label className={styles.fieldLabel}>
+                            ชื่อ-นามสกุลผู้โดยสาร
+                            <span className={styles.requiredBadge}>จำเป็น</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={passenger.fullName}
+                            onChange={(event) => updatePassenger(passenger.id, "fullName", event.target.value)}
+                            placeholder="ชื่อ-นามสกุล"
+                            className={clsx(styles.input, errors[`passenger-${passenger.id}`] && styles.inputError)}
+                          />
+                          {errors[`passenger-${passenger.id}`] ? (
+                            <div className={styles.fieldError}>{errors[`passenger-${passenger.id}`]}</div>
+                          ) : null}
+                        </div>
 
-                  <div>
-                    <label className="field-label">
-                      ประเภทตั๋ว
-                    </label>
-                    <div className="form-input bg-gray-100 text-gray-700 cursor-not-allowed select-none">
-                      {ticketName}
-                    </div>
-                    <div className="field-help">ระบบพรีฟิลจากข้อมูลตั๋วที่เลือกในหน้า select-ticket และไม่อนุญาตให้แก้ไข</div>
-                  </div>
+                        <div>
+                          <label className={styles.fieldLabel}>
+                            ประเภทตั๋ว
+                          </label>
+                          <div className={clsx(styles.input, styles.readonlyInput)}>
+                            {ticketName}
+                          </div>
+                          <div className={styles.fieldHelp}>ระบบพรีฟิลจากข้อมูลตั๋วที่เลือกในหน้า select-ticket และไม่อนุญาตให้แก้ไข</div>
+                        </div>
 
-                  <div>
-                    <label className="field-label">ราคา</label>
-                    <div className="form-input bg-gray-100 text-gray-700 cursor-not-allowed select-none">
-                      ฿{formatCurrency(ticketPrice)}
-                    </div>
-                  </div>
+                        <div>
+                          <label className={styles.fieldLabel}>ราคา</label>
+                          <div className={clsx(styles.input, styles.readonlyInput)}>
+                            ฿{formatCurrency(ticketPrice)}
+                          </div>
+                        </div>
                       </>
                     );
                   })()}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-            <label className="flex items-start gap-3 cursor-pointer">
+          <div className={styles.termsCard}>
+            <label className={styles.termsLabel}>
               <input
                 type="checkbox"
                 checked={acceptTerms}
                 onChange={(event) => setAcceptTerms(event.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-gray-300 text-[#0EA5E9] focus:ring-2 focus:ring-blue-100"
+                className={styles.checkbox}
               />
-              <span className="text-sm text-gray-700">
+              <span className={styles.termsText}>
                 ข้าพเจ้ายอมรับเงื่อนไขการให้บริการและยืนยันว่าข้อมูลผู้โดยสารทั้งหมดถูกต้องครบถ้วน
               </span>
             </label>
-            {errors.acceptTerms ? <div className="field-error">{errors.acceptTerms}</div> : null}
+            {errors.acceptTerms ? <div className={styles.fieldError}>{errors.acceptTerms}</div> : null}
           </div>
         </div>
 
-        <div className="fixed bottom-20 md:bottom-8 left-0 right-0 px-4 max-w-2xl mx-auto">
+        <div className={styles.actionBar}>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className={`w-full py-4 rounded-2xl transition-all text-lg ${
-              !isSubmitting
-                ? "bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] text-white shadow-xl hover:shadow-2xl"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
+            className={clsx(styles.actionButton, isSubmitting && styles.actionButtonDisabled)}
           >
             {isSubmitting ? "กำลังบันทึกข้อมูล..." : "ถัดไป"}
           </button>
