@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Mail } from "lucide-react";
 import { Link } from "@/lib/router";
 import { forgotPassword, isValidEmail } from "@/lib/ferry";
+import { useAppContext } from "@/app/providers/AppProvider";
+import type { AppLanguage } from "@/lib/i18n";
 import styles from "@/styles/pages/ForgotPassword.module.css";
 
 type FormErrors = {
@@ -12,7 +14,82 @@ type FormErrors = {
   form?: string;
 };
 
+const FORGOT_PASSWORD_COPY: Record<
+  AppLanguage,
+  {
+    infoWithEmail: string;
+    infoWithoutEmail: string;
+    emailRequired: string;
+    emailInvalid: string;
+    submitError: string;
+    title: string;
+    description: string;
+    email: string;
+    required: string;
+    emailPlaceholder: string;
+    helper: string;
+    submitting: string;
+    submit: string;
+    rememberPassword: string;
+    backToLogin: string;
+  }
+> = {
+  th: {
+    infoWithEmail: "ยืนยันอีเมลแล้ว กดส่งคำขอเพื่อรับลิงก์เปลี่ยนรหัสผ่านได้เลย",
+    infoWithoutEmail: "กรอกอีเมลของบัญชีนี้เพื่อรับลิงก์เปลี่ยนรหัสผ่าน",
+    emailRequired: "กรุณากรอกอีเมล",
+    emailInvalid: "รูปแบบอีเมลไม่ถูกต้อง",
+    submitError: "ส่งคำขอรีเซ็ตรหัสผ่านไม่สำเร็จ",
+    title: "ลืมรหัสผ่าน",
+    description: "กรอกอีเมลเพื่อรับขั้นตอนการรีเซ็ตรหัสผ่าน",
+    email: "อีเมล",
+    required: "จำเป็น",
+    emailPlaceholder: "กรอกอีเมล",
+    helper: "ระบบจะส่งลิงก์หรือโทเคนรีเซ็ตรหัสผ่านไปยังอีเมลนี้",
+    submitting: "กำลังส่งคำขอ...",
+    submit: "ส่งคำขอรีเซ็ตรหัสผ่าน",
+    rememberPassword: "จำรหัสผ่านได้แล้ว?",
+    backToLogin: "กลับไปเข้าสู่ระบบ",
+  },
+  zh: {
+    infoWithEmail: "邮箱已确认，直接发送请求即可获取重置密码链接",
+    infoWithoutEmail: "请输入此账户的邮箱以接收密码重置链接",
+    emailRequired: "请输入邮箱",
+    emailInvalid: "邮箱格式不正确",
+    submitError: "发送密码重置请求失败",
+    title: "忘记密码",
+    description: "输入邮箱以接收重置密码的说明",
+    email: "邮箱",
+    required: "必填",
+    emailPlaceholder: "输入邮箱",
+    helper: "系统会将重置密码的链接或令牌发送到此邮箱",
+    submitting: "正在发送请求...",
+    submit: "发送重置请求",
+    rememberPassword: "已经想起密码？",
+    backToLogin: "返回登录",
+  },
+  en: {
+    infoWithEmail: "Your email is ready. Send the request to receive the password reset link.",
+    infoWithoutEmail: "Enter the email for this account to receive a password reset link.",
+    emailRequired: "Please enter your email",
+    emailInvalid: "The email format is invalid",
+    submitError: "We couldn't send the reset request",
+    title: "Forgot Password",
+    description: "Enter your email to receive reset instructions",
+    email: "Email",
+    required: "Required",
+    emailPlaceholder: "Enter your email",
+    helper: "The app will send a password reset link or token to this email address",
+    submitting: "Sending request...",
+    submit: "Send Reset Request",
+    rememberPassword: "Remembered your password?",
+    backToLogin: "Back to Login",
+  },
+};
+
 export function ForgotPassword() {
+  const { language } = useAppContext();
+  const text = FORGOT_PASSWORD_COPY[language];
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,19 +111,19 @@ export function ForgotPassword() {
     if (params.get("from") === "profile") {
       setInfoMessage(
         presetEmail
-          ? "ยืนยันอีเมลแล้ว กดส่งคำขอเพื่อรับลิงก์เปลี่ยนรหัสผ่านได้เลย"
-          : "กรอกอีเมลของบัญชีนี้เพื่อรับลิงก์เปลี่ยนรหัสผ่าน",
+          ? text.infoWithEmail
+          : text.infoWithoutEmail,
       );
     }
-  }, []);
+  }, [text.infoWithEmail, text.infoWithoutEmail]);
 
   const validateForm = () => {
     const nextErrors: FormErrors = {};
 
     if (!email.trim()) {
-      nextErrors.email = "กรุณากรอกอีเมล";
+      nextErrors.email = text.emailRequired;
     } else if (!isValidEmail(email)) {
-      nextErrors.email = "รูปแบบอีเมลไม่ถูกต้อง";
+      nextErrors.email = text.emailInvalid;
     }
 
     setErrors(nextErrors);
@@ -72,7 +149,7 @@ export function ForgotPassword() {
       setSuccessMessage(result.message);
     } catch (error) {
       setErrors({
-        form: error instanceof Error ? error.message : "ส่งคำขอรีเซ็ตรหัสผ่านไม่สำเร็จ",
+        form: error instanceof Error ? error.message : text.submitError,
       });
     } finally {
       setIsSubmitting(false);
@@ -84,8 +161,8 @@ export function ForgotPassword() {
       <div className={styles.container}>
         <section className={styles.card}>
           <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Forgot Password</h2>
-            <p className={styles.cardText}>กรอกอีเมลเพื่อรับขั้นตอนการรีเซ็ตรหัสผ่าน</p>
+            <h2 className={styles.cardTitle}>{text.title}</h2>
+            <p className={styles.cardText}>{text.description}</p>
           </div>
 
           {infoMessage ? <div className={`${styles.status} ${styles.statusInfo}`}>{infoMessage}</div> : null}
@@ -97,9 +174,9 @@ export function ForgotPassword() {
               <div className={styles.labelRow}>
                 <label className={styles.label} htmlFor="forgot-email">
                   <Mail className={styles.iconSm} />
-                  อีเมล
+                  {text.email}
                 </label>
-                <span className={styles.required}>จำเป็น</span>
+                <span className={styles.required}>{text.required}</span>
               </div>
               <input
                 id="forgot-email"
@@ -107,22 +184,22 @@ export function ForgotPassword() {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="กรอกอีเมล"
+                placeholder={text.emailPlaceholder}
                 className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
               />
-              <div className={styles.helper}>ระบบจะส่งลิงก์หรือโทเคนรีเซ็ตรหัสผ่านไปยังอีเมลนี้</div>
+              <div className={styles.helper}>{text.helper}</div>
               {errors.email ? <div className={styles.error}>{errors.email}</div> : null}
             </div>
 
             <button type="submit" className={styles.button} disabled={isSubmitting}>
-              {isSubmitting ? "กำลังส่งคำขอ..." : "ส่งคำขอรีเซ็ตรหัสผ่าน"}
+              {isSubmitting ? text.submitting : text.submit}
             </button>
           </form>
 
           <div className={styles.secondaryAction}>
-            <span>จำรหัสผ่านได้แล้ว?</span>
+            <span>{text.rememberPassword}</span>
             <Link href="/login" className={styles.inlineLink}>
-              กลับไปเข้าสู่ระบบ
+              {text.backToLogin}
             </Link>
           </div>
         </section>

@@ -5,8 +5,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
-import { fetchTicketsByBooking, formatCurrency, getTicketQrImageUrl } from "@/lib/ferry";
+import { fetchTicketsByBooking, getTicketQrImageUrl } from "@/lib/ferry";
 import { findTicketViewBooking, findTicketViewBookingByBookingNo, getBookingStatusMeta } from "@/lib/ticket-view";
+import {
+  formatLocalizedDate,
+  formatLocalizedTime,
+  formatPassengerTypeLabel,
+  formatPriceDisplay,
+  getDocumentLanguage,
+  type AppLanguage,
+} from "@/lib/i18n";
 import { QrCode, Calendar, Clock, User, Download, Share2, ChevronLeft, Printer } from "lucide-react";
 import type { TicketViewBooking } from "@/lib/ticket-view";
 import type { TicketRecord } from "@/lib/app-types";
@@ -23,6 +31,134 @@ type TicketEntry = {
   qrToken: string;
   qrImageUrl?: string;
   raw?: unknown;
+};
+
+type TicketDetailText = {
+  fallbackPassenger: string;
+  bookingNumber: string;
+  ticketNumber: string;
+  passengerName: string;
+  passengerType: string;
+  travelDate: string;
+  travelTime: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  issuedDate: string;
+  price: string;
+  scanHint: string;
+  ticketImageLoadError: string;
+  canvasError: string;
+  pngError: string;
+  back: string;
+  emptyTitle: string;
+  emptyText: string;
+  ticketHeroLabel: string;
+  qrAlt: (ticketNo: string) => string;
+  qrHintReady: string;
+  qrHintPending: string;
+  passengerSection: string;
+  contactSection: string;
+  paymentAmount: string;
+  download: string;
+  print: string;
+  share: string;
+};
+
+const TICKET_DETAIL_COPY: Record<AppLanguage, TicketDetailText> = {
+  th: {
+    fallbackPassenger: "ผู้โดยสาร",
+    bookingNumber: "หมายเลขการจอง",
+    ticketNumber: "หมายเลขตั๋ว",
+    passengerName: "ชื่อผู้โดยสาร",
+    passengerType: "ประเภทผู้โดยสาร",
+    travelDate: "วันที่เดินทาง",
+    travelTime: "เวลาเดินทาง",
+    contactName: "ชื่อ",
+    phone: "เบอร์โทร",
+    email: "อีเมล",
+    issuedDate: "วันที่ออกตั๋ว",
+    price: "ราคา",
+    scanHint: "สแกนเพื่อเช็กอิน",
+    ticketImageLoadError: "โหลดภาพตั๋วไม่สำเร็จ",
+    canvasError: "ไม่สามารถสร้าง canvas สำหรับดาวน์โหลดรูปภาพได้",
+    pngError: "แปลงตั๋วเป็นรูป PNG ไม่สำเร็จ",
+    back: "กลับ",
+    emptyTitle: "ยังไม่มีรายละเอียดตั๋ว",
+    emptyText: "กลับไปที่หน้า \"ตั๋วของฉัน\" แล้วเลือกตั๋วอีกครั้ง",
+    ticketHeroLabel: "หมายเลขตั๋ว",
+    qrAlt: (ticketNo) => `QR ของ ${ticketNo}`,
+    qrHintReady: "แสดง QR Code นี้ที่ท่าเรือก่อนขึ้นเรือ",
+    qrHintPending: "QR ของตั๋วจะปรากฏเมื่อการออกตั๋วเสร็จสมบูรณ์",
+    passengerSection: "รายละเอียดผู้โดยสาร",
+    contactSection: "ข้อมูลผู้จอง",
+    paymentAmount: "ยอดชำระ",
+    download: "ดาวน์โหลด",
+    print: "ปริ้น",
+    share: "แชร์",
+  },
+  zh: {
+    fallbackPassenger: "乘客",
+    bookingNumber: "预订编号",
+    ticketNumber: "票号",
+    passengerName: "乘客姓名",
+    passengerType: "票种",
+    travelDate: "出行日期",
+    travelTime: "出发时间",
+    contactName: "姓名",
+    phone: "电话",
+    email: "邮箱",
+    issuedDate: "出票时间",
+    price: "价格",
+    scanHint: "扫码办理登船",
+    ticketImageLoadError: "票券图片加载失败",
+    canvasError: "无法创建用于下载图片的 canvas",
+    pngError: "无法将票券转换为 PNG 图片",
+    back: "返回",
+    emptyTitle: "没有票券详情",
+    emptyText: "请回到“我的票券”页面并重新选择票券",
+    ticketHeroLabel: "票号",
+    qrAlt: (ticketNo) => `${ticketNo} 的二维码`,
+    qrHintReady: "登船前请在码头出示此二维码",
+    qrHintPending: "票券完成签发后，这里会显示二维码",
+    passengerSection: "乘客详情",
+    contactSection: "预订人信息",
+    paymentAmount: "付款金额",
+    download: "下载",
+    print: "打印",
+    share: "分享",
+  },
+  en: {
+    fallbackPassenger: "Passenger",
+    bookingNumber: "Booking Number",
+    ticketNumber: "Ticket Number",
+    passengerName: "Passenger Name",
+    passengerType: "Ticket Type",
+    travelDate: "Travel Date",
+    travelTime: "Travel Time",
+    contactName: "Name",
+    phone: "Phone",
+    email: "Email",
+    issuedDate: "Issued At",
+    price: "Price",
+    scanHint: "Scan for check-in",
+    ticketImageLoadError: "We couldn't load the ticket image",
+    canvasError: "We couldn't create the canvas for image download",
+    pngError: "We couldn't convert the ticket to a PNG image",
+    back: "Back",
+    emptyTitle: "No ticket details available",
+    emptyText: "Go back to My Tickets and choose the ticket again",
+    ticketHeroLabel: "Ticket Number",
+    qrAlt: (ticketNo) => `QR for ${ticketNo}`,
+    qrHintReady: "Show this QR code at the pier before boarding",
+    qrHintPending: "The ticket QR code will appear once ticket issuance is complete",
+    passengerSection: "Passenger Details",
+    contactSection: "Booker Details",
+    paymentAmount: "Payment Amount",
+    download: "Download",
+    print: "Print",
+    share: "Share",
+  },
 };
 
 function escapeHtml(value: string) {
@@ -113,12 +249,12 @@ function extractTicketTypeLabel(raw: unknown) {
   return topLevelSpecificLabel || nestedLabel;
 }
 
-function buildTicketEntries(record: TicketViewBooking): TicketEntry[] {
+function buildTicketEntries(record: TicketViewBooking, language: AppLanguage): TicketEntry[] {
   if (record.tickets.length === 0) {
     return [
       {
         ticketNo: record.bookingNo,
-        passengerName: record.contactName || "ผู้โดยสาร",
+        passengerName: record.contactName || TICKET_DETAIL_COPY[language].fallbackPassenger,
         passengerType: "-",
         ticketLabel: "",
         status: record.status,
@@ -133,7 +269,7 @@ function buildTicketEntries(record: TicketViewBooking): TicketEntry[] {
 
   return record.tickets.map((ticket) => ({
     ticketNo: ticket.ticketNo || record.bookingNo,
-    passengerName: ticket.passengerName || record.contactName || "ผู้โดยสาร",
+    passengerName: ticket.passengerName || record.contactName || TICKET_DETAIL_COPY[language].fallbackPassenger,
     passengerType: ticket.passengerType || "-",
     ticketLabel: extractTicketTypeLabel(ticket.raw),
     status: ticket.status || record.status,
@@ -145,91 +281,36 @@ function buildTicketEntries(record: TicketViewBooking): TicketEntry[] {
   }));
 }
 
-function buildShareText(record: TicketViewBooking, ticket: TicketEntry) {
-  const passengerTypeLabel = formatPassengerTypeDisplay(ticket.passengerType, ticket.ticketLabel);
+function buildShareText(language: AppLanguage, text: TicketDetailText, record: TicketViewBooking, ticket: TicketEntry) {
+  const passengerTypeLabel = formatPassengerTypeDisplay(language, ticket.passengerType, ticket.ticketLabel);
 
   return [
     "Ferry Ticket",
-    `หมายเลขการจอง: ${record.bookingNo}`,
-    `หมายเลขตั๋ว: ${ticket.ticketNo}`,
-    `ชื่อผู้โดยสาร: ${ticket.passengerName}`,
-    `ประเภทผู้โดยสาร: ${passengerTypeLabel}`,
-    `วันเดินทาง: ${ticket.travelDate}`,
-    `เวลา: ${ticket.travelTime}`,
-    `ผู้ติดต่อ: ${record.contactName || "-"}`,
-    `โทร: ${record.contactPhone || "-"}`,
-    `อีเมล: ${record.contactEmail || "-"}`,
+    `${text.bookingNumber}: ${record.bookingNo}`,
+    `${text.ticketNumber}: ${ticket.ticketNo}`,
+    `${text.passengerName}: ${ticket.passengerName}`,
+    `${text.passengerType}: ${passengerTypeLabel}`,
+    `${text.travelDate}: ${formatLocalizedDate(language, ticket.travelDate)}`,
+    `${text.travelTime}: ${formatLocalizedTime(language, ticket.travelTime)}`,
+    `${text.contactName}: ${record.contactName || "-"}`,
+    `${text.phone}: ${record.contactPhone || "-"}`,
+    `${text.email}: ${record.contactEmail || "-"}`,
     ticket.qrToken ? `QR Token: ${ticket.qrToken}` : "",
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-function formatIssuedDate(value?: string) {
+function formatIssuedDate(language: AppLanguage, value?: string) {
   if (!value) {
     return "-";
   }
 
-  const issuedDate = new Date(value);
-
-  if (Number.isNaN(issuedDate.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("th-TH", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(issuedDate);
+  return formatLocalizedDate(language, value, "datetime");
 }
 
-function formatPassengerTypeDisplay(value: string, ticketLabel?: string) {
-  const normalizedLabel = ticketLabel?.trim().replace(/\s*\([^)]*\)\s*/g, "").trim() || "";
-  const normalizedLabelKey = normalizedLabel.toLowerCase();
-  const normalizedValue = value.trim().toLowerCase();
-
-  if (normalizedLabel) {
-    if (/^child|kid|เด็ก$/i.test(normalizedLabelKey)) {
-      return "ตั๋วเด็ก";
-    }
-
-    if (/^adult|ผู้ใหญ่$/i.test(normalizedLabelKey)) {
-      return "ตั๋วผู้ใหญ่";
-    }
-
-    if (/^standard|normal|มาตรฐาน$/i.test(normalizedLabelKey)) {
-      return normalizedValue === "child" ? "ตั๋วเด็ก" : "ตั๋วผู้ใหญ่";
-    }
-
-    if (/^vip|premium$/i.test(normalizedLabelKey)) {
-      return "ตั๋ว VIP";
-    }
-
-    return normalizedLabel;
-  }
-
-  if (normalizedValue === "child") {
-    return "ตั๋วเด็ก";
-  }
-
-  if (normalizedValue === "adult") {
-    return "ตั๋วผู้ใหญ่";
-  }
-
-  if (normalizedValue === "vip" || normalizedValue === "premium") {
-    return "ตั๋ว VIP";
-  }
-
-  return value.trim().replace(/\s*\([^)]*\)\s*/g, "").trim() || "-";
-}
-
-function formatAmountLabel(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+function formatPassengerTypeDisplay(language: AppLanguage, value: string, ticketLabel?: string) {
+  return formatPassengerTypeLabel(language, value, ticketLabel);
 }
 
 function expandSelectedTicketLabels(
@@ -260,17 +341,18 @@ function resolveDisplayValue(...values: Array<string | null | undefined>) {
 }
 
 function buildTicketDocument(
+  language: AppLanguage,
+  text: TicketDetailText,
   record: TicketViewBooking,
   ticket: TicketEntry,
   displayTravelDate: string,
   displayTravelTime: string,
   ticketUnitPrice: number,
 ) {
-  const issuedDateLabel = formatIssuedDate(record.updatedAt);
-  const passengerTypeLabel = formatPassengerTypeDisplay(ticket.passengerType, ticket.ticketLabel);
-  const totalAmountLabel = formatAmountLabel(ticketUnitPrice);
+  const issuedDateLabel = formatIssuedDate(language, record.updatedAt);
+  const passengerTypeLabel = formatPassengerTypeDisplay(language, ticket.passengerType, ticket.ticketLabel);
   const qrMarkup = ticket.qrImageUrl
-    ? `<img src="${ticket.qrImageUrl}" alt="QR ของ ${escapeHtml(ticket.ticketNo)}" class="qr-image" />`
+    ? `<img src="${ticket.qrImageUrl}" alt="${escapeHtml(text.qrAlt(ticket.ticketNo))}" class="qr-image" />`
     : `<svg class="qr-placeholder" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="QR placeholder">
         <rect width="100" height="100" rx="16" fill="#F8FAFC"/>
         <path d="M14 14H38V22H22V38H14V14ZM62 14H86V38H78V22H62V14ZM14 62H22V78H38V86H14V62ZM86 86H62V78H78V62H86V86Z" fill="#111827"/>
@@ -283,7 +365,7 @@ function buildTicketDocument(
       </svg>`;
 
   return `<!DOCTYPE html>
-<html lang="th">
+<html lang="${getDocumentLanguage(language)}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -482,34 +564,34 @@ function buildTicketDocument(
         <div class="ticket-body">
           <div class="info-grid">
             <div class="info-block">
-              <span class="info-label">ชื่อผู้โดยสาร</span>
+              <span class="info-label">${escapeHtml(text.passengerName)}</span>
               <div class="info-value">${escapeHtml(ticket.passengerName)}</div>
             </div>
             <div class="info-block info-block--right">
-              <span class="info-label">ประเภทผู้โดยสาร</span>
+              <span class="info-label">${escapeHtml(text.passengerType)}</span>
               <div class="info-value">${escapeHtml(passengerTypeLabel)}</div>
             </div>
           </div>
 
           <div class="info-grid">
             <div class="info-block">
-              <span class="info-label">วันที่เดินทาง</span>
+              <span class="info-label">${escapeHtml(text.travelDate)}</span>
               <div class="info-value">${escapeHtml(displayTravelDate)}</div>
             </div>
             <div class="info-block info-block--right">
-              <span class="info-label">เวลาเดินทาง</span>
+              <span class="info-label">${escapeHtml(text.travelTime)}</span>
               <div class="info-value">${escapeHtml(displayTravelTime)}</div>
             </div>
           </div>
 
           <div class="summary">
             <div class="info-block">
-              <span class="info-label">หมายเลขตั๋ว</span>
+              <span class="info-label">${escapeHtml(text.ticketNumber)}</span>
               <div class="info-value" style="color:#2563EB;">${escapeHtml(ticket.ticketNo)}</div>
             </div>
             <div class="info-block info-block--right">
-              <span class="info-label">ราคา</span>
-              <div class="price-value">฿ ${escapeHtml(totalAmountLabel)}</div>
+              <span class="info-label">${escapeHtml(text.price)}</span>
+              <div class="price-value">${escapeHtml(formatPriceDisplay(language, ticketUnitPrice))}</div>
             </div>
           </div>
         </div>
@@ -518,8 +600,8 @@ function buildTicketDocument(
           <div class="qr-shell">
             ${qrMarkup}
           </div>
-          <p class="scan-hint">Scan for check-in</p>
-          <div class="issue-date">วันที่ออกตั๋ว ${escapeHtml(issuedDateLabel)}</div>
+          <p class="scan-hint">${escapeHtml(text.scanHint)}</p>
+          <div class="issue-date">${escapeHtml(text.issuedDate)} ${escapeHtml(issuedDateLabel)}</div>
         </div>
       </div>
     </div>
@@ -531,12 +613,12 @@ const TICKET_IMAGE_WIDTH = 478;
 const TICKET_IMAGE_HEIGHT = 900;
 const TICKET_IMAGE_SCALE = 2;
 
-function loadImage(source: string) {
+function loadImage(source: string, text: TicketDetailText) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("โหลดภาพตั๋วไม่สำเร็จ"));
+    image.onerror = () => reject(new Error(text.ticketImageLoadError));
     image.src = source;
   });
 }
@@ -563,6 +645,8 @@ function drawRoundedRect(
 }
 
 async function createTicketImageBlob(options: {
+  language: AppLanguage;
+  text: TicketDetailText;
   fileBaseName: string;
   ticketNo: string;
   passengerName: string;
@@ -580,7 +664,7 @@ async function createTicketImageBlob(options: {
   const context = canvas.getContext("2d");
 
   if (!context) {
-    throw new Error("ไม่สามารถสร้าง canvas สำหรับดาวน์โหลดรูปภาพได้");
+    throw new Error(options.text.canvasError);
   }
 
   context.scale(TICKET_IMAGE_SCALE, TICKET_IMAGE_SCALE);
@@ -645,10 +729,10 @@ async function createTicketImageBlob(options: {
 
   context.font = '600 11px "Kanit", "Segoe UI", sans-serif';
   context.fillStyle = "#9CA3AF";
-  context.fillText("ชื่อผู้โดยสาร", cardX + 32, 188);
-  context.fillText("ประเภทผู้โดยสาร", cardX + cardWidth - 150, 188);
-  context.fillText("วันที่เดินทาง", cardX + 32, 284);
-  context.fillText("เวลาเดินทาง", cardX + cardWidth - 118, 284);
+  context.fillText(options.text.passengerName, cardX + 32, 188);
+  context.fillText(options.text.passengerType, cardX + cardWidth - 150, 188);
+  context.fillText(options.text.travelDate, cardX + 32, 284);
+  context.fillText(options.text.travelTime, cardX + cardWidth - 118, 284);
 
   context.font = '600 18px "Kanit", "Segoe UI", sans-serif';
   context.fillStyle = "#1F2937";
@@ -669,9 +753,9 @@ async function createTicketImageBlob(options: {
   context.font = '600 11px "Kanit", "Segoe UI", sans-serif';
   context.fillStyle = "#9CA3AF";
   context.textAlign = "left";
-  context.fillText("หมายเลขตั๋ว", cardX + 32, 396);
+  context.fillText(options.text.ticketNumber, cardX + 32, 396);
   context.textAlign = "right";
-  context.fillText("ราคา", cardX + cardWidth - 32, 396);
+  context.fillText(options.text.price, cardX + cardWidth - 32, 396);
 
   context.font = '600 18px "Kanit", "Segoe UI", sans-serif';
   context.fillStyle = "#2563EB";
@@ -679,7 +763,7 @@ async function createTicketImageBlob(options: {
   context.fillText(options.ticketNo, cardX + 32, 434);
   context.fillStyle = "#1F2937";
   context.textAlign = "right";
-  context.fillText(`฿ ${formatAmountLabel(options.ticketUnitPrice)}`, cardX + cardWidth - 32, 434);
+  context.fillText(formatPriceDisplay(options.language, options.ticketUnitPrice), cardX + cardWidth - 32, 434);
 
   context.fillStyle = "#F9FAFB";
   drawRoundedRect(context, cardX, 470, cardWidth, 364, 0);
@@ -693,7 +777,7 @@ async function createTicketImageBlob(options: {
 
   if (options.qrImageUrl) {
     try {
-      const qrImage = await loadImage(options.qrImageUrl);
+      const qrImage = await loadImage(options.qrImageUrl, options.text);
       context.drawImage(qrImage, cardX + 128, 534, 132, 132);
     } catch {
       context.fillStyle = "#E5E7EB";
@@ -707,11 +791,11 @@ async function createTicketImageBlob(options: {
   context.font = '500 11px "Kanit", "Segoe UI", sans-serif';
   context.fillStyle = "#6B7280";
   context.textAlign = "center";
-  context.fillText("SCAN FOR CHECK-IN", TICKET_IMAGE_WIDTH / 2, 718);
+  context.fillText(options.text.scanHint, TICKET_IMAGE_WIDTH / 2, 718);
 
   context.font = '500 13px "Kanit", "Segoe UI", sans-serif';
   context.fillStyle = "#94A3B8";
-  context.fillText(`วันที่ออกตั๋ว ${options.issuedDateLabel}`, TICKET_IMAGE_WIDTH / 2, 760);
+  context.fillText(`${options.text.issuedDate} ${options.issuedDateLabel}`, TICKET_IMAGE_WIDTH / 2, 760);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -720,12 +804,14 @@ async function createTicketImageBlob(options: {
         return;
       }
 
-      reject(new Error("แปลงตั๋วเป็นรูป PNG ไม่สำเร็จ"));
+      reject(new Error(options.text.pngError));
     }, "image/png");
   });
 }
 
 async function downloadTicketAsImage(options: {
+  language: AppLanguage;
+  text: TicketDetailText;
   fileBaseName: string;
   ticketNo: string;
   passengerName: string;
@@ -750,7 +836,8 @@ async function downloadTicketAsImage(options: {
 export function TicketDetail({ ticketId }: { ticketId?: string }) {
   const navigate = useNavigate();
   const searchParams = useSearchParams();
-  const { booking } = useAppContext();
+  const { booking, language } = useAppContext();
+  const text = TICKET_DETAIL_COPY[language];
   const requestedBookingNo = searchParams.get("bookingNo");
   const [remoteTickets, setRemoteTickets] = useState<TicketRecord[] | null>(null);
 
@@ -808,8 +895,8 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
   }, [baseBooking]);
 
   const ticketEntries = useMemo(
-    () => (activeBooking ? buildTicketEntries(activeBooking) : []),
-    [activeBooking],
+    () => (activeBooking ? buildTicketEntries(activeBooking, language) : []),
+    [activeBooking, language],
   );
   const selectedTicketIndex = useMemo(() => {
     if (ticketEntries.length === 0) {
@@ -900,8 +987,8 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
       return selectedPassengerFallback;
     }
 
-    return ticketPassengerName || activeBooking.contactName || "ผู้โดยสาร";
-  }, [activeBooking, fallbackLookupTicket?.passengerName, resolvedTicket, selectedPassengerFallback]);
+    return ticketPassengerName || activeBooking.contactName || text.fallbackPassenger;
+  }, [activeBooking, fallbackLookupTicket?.passengerName, resolvedTicket, selectedPassengerFallback, text.fallbackPassenger]);
   const displayQrImageUrl = useMemo(
     () => {
       const hasIssuedTickets = (activeBooking?.tickets.length ?? 0) > 0;
@@ -927,21 +1014,21 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
     [displayPassengerName, displayQrImageUrl, resolvedTicket],
   );
   const issuedDateLabel = useMemo(
-    () => formatIssuedDate(activeBooking?.updatedAt),
-    [activeBooking?.updatedAt],
+    () => formatIssuedDate(language, activeBooking?.updatedAt),
+    [activeBooking?.updatedAt, language],
   );
   const passengerTypeLabel = useMemo(
-    () => formatPassengerTypeDisplay(resolvedTicket?.passengerType || "-", resolvedTicket?.ticketLabel),
-    [resolvedTicket?.passengerType, resolvedTicket?.ticketLabel],
+    () => formatPassengerTypeDisplay(language, resolvedTicket?.passengerType || "-", resolvedTicket?.ticketLabel),
+    [language, resolvedTicket?.passengerType, resolvedTicket?.ticketLabel],
   );
   const displayTravelDate = useMemo(
     () =>
       resolveDisplayValue(
         resolvedTicket?.travelDate,
         activeBooking?.scheduleDate,
-        booking.selectedSchedule?.dateLabel,
+        booking.selectedSchedule?.dateKey,
       ),
-    [activeBooking?.scheduleDate, booking.selectedSchedule?.dateLabel, resolvedTicket?.travelDate],
+    [activeBooking?.scheduleDate, booking.selectedSchedule?.dateKey, resolvedTicket?.travelDate],
   );
   const displayTravelTime = useMemo(
     () =>
@@ -958,8 +1045,8 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
       return null;
     }
 
-    return getBookingStatusMeta(activeBooking);
-  }, [activeBooking]);
+    return getBookingStatusMeta(activeBooking, language);
+  }, [activeBooking, language]);
   const statusBadgeClassName = useMemo(() => {
     if (!statusMeta) {
       return styles.statusConfirmed;
@@ -986,19 +1073,23 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
     }
 
     const documentHtml = buildTicketDocument(
+      language,
+      text,
       activeBooking,
       displayTicket,
-      displayTravelDate,
-      displayTravelTime,
+      formatLocalizedDate(language, displayTravelDate),
+      formatLocalizedTime(language, displayTravelTime),
       selectedTicketUnitPrice,
     );
     void downloadTicketAsImage({
+      language,
+      text,
       fileBaseName: displayTicket.ticketNo || activeBooking.bookingNo,
       ticketNo: displayTicket.ticketNo,
       passengerName: displayTicket.passengerName,
       passengerTypeLabel,
-      displayTravelDate,
-      displayTravelTime,
+      displayTravelDate: formatLocalizedDate(language, displayTravelDate),
+      displayTravelTime: formatLocalizedTime(language, displayTravelTime),
       ticketUnitPrice: selectedTicketUnitPrice,
       issuedDateLabel,
       qrImageUrl: displayTicket.qrImageUrl,
@@ -1021,10 +1112,12 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
     }
 
     const documentHtml = buildTicketDocument(
+      language,
+      text,
       activeBooking,
       displayTicket,
-      displayTravelDate,
-      displayTravelTime,
+      formatLocalizedDate(language, displayTravelDate),
+      formatLocalizedTime(language, displayTravelTime),
       selectedTicketUnitPrice,
     );
     const printWindow = window.open("", "_blank");
@@ -1047,17 +1140,19 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
       return;
     }
 
-    const shareText = buildShareText(activeBooking, displayTicket);
+    const shareText = buildShareText(language, text, activeBooking, displayTicket);
 
     try {
       if (navigator.share) {
         const imageBlob = await createTicketImageBlob({
+          language,
+          text,
           fileBaseName: displayTicket.ticketNo || activeBooking.bookingNo,
           ticketNo: displayTicket.ticketNo,
           passengerName: displayTicket.passengerName,
           passengerTypeLabel,
-          displayTravelDate,
-          displayTravelTime,
+          displayTravelDate: formatLocalizedDate(language, displayTravelDate),
+          displayTravelTime: formatLocalizedTime(language, displayTravelTime),
           ticketUnitPrice: selectedTicketUnitPrice,
           issuedDateLabel,
           qrImageUrl: displayTicket.qrImageUrl,
@@ -1097,16 +1192,17 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
       <div className={styles.page}>
         <div className={styles.containerSm}>
           <button
+            type="button"
             onClick={() => navigate("/my-tickets")}
             className={styles.backButton}
           >
             <ChevronLeft className={styles.backIcon} />
-            <span>กลับ</span>
+            <span>{text.back}</span>
           </button>
 
           <div className={styles.emptyCard}>
-            <h1 className={styles.emptyTitle}>ยังไม่มีรายละเอียดตั๋ว</h1>
-            <p className={styles.emptyText}>กลับไปที่หน้า "ตั๋วของฉัน" แล้วเลือกตั๋วอีกครั้ง</p>
+            <h1 className={styles.emptyTitle}>{text.emptyTitle}</h1>
+            <p className={styles.emptyText}>{text.emptyText}</p>
           </div>
         </div>
       </div>
@@ -1117,11 +1213,12 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
     <div className={styles.page}>
       <div className={styles.containerSm}>
         <button
+          type="button"
           onClick={() => navigate("/my-tickets")}
           className={styles.backButton}
         >
           <ChevronLeft className={styles.backIcon} />
-          <span>กลับ</span>
+          <span>{text.back}</span>
         </button>
 
         <div className={styles.statusWrap}>
@@ -1132,7 +1229,7 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
 
         <div className={styles.ticketCard}>
           <div className={styles.ticketHero}>
-            <div className={styles.ticketHeroLabel}>หมายเลขตั๋ว</div>
+            <div className={styles.ticketHeroLabel}>{text.ticketHeroLabel}</div>
             <div className={styles.ticketHeroValue}>{resolvedTicket.ticketNo}</div>
           </div>
 
@@ -1141,7 +1238,7 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
               {displayQrImageUrl ? (
                 <img
                   src={displayQrImageUrl}
-                  alt={`QR ของ ${resolvedTicket.ticketNo}`}
+                  alt={text.qrAlt(resolvedTicket.ticketNo)}
                   className={styles.qrImage}
                 />
               ) : (
@@ -1150,14 +1247,14 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
             </div>
 
             <div className={styles.qrHint}>
-              {resolvedTicket.qrToken ? "แสดง QR Code นี้ที่ท่าเรือก่อนขึ้นเรือ" : "QR ของตั๋วจะปรากฏเมื่อการออกตั๋วเสร็จสมบูรณ์"}
+              {resolvedTicket.qrToken ? text.qrHintReady : text.qrHintPending}
             </div>
 
           </div>
         </div>
 
         <div className={styles.sectionCard}>
-          <h2 className={styles.sectionTitle}>รายละเอียดผู้โดยสาร</h2>
+          <h2 className={styles.sectionTitle}>{text.passengerSection}</h2>
 
           <div className={styles.detailList}>
             <div className={styles.passengerRow}>
@@ -1173,72 +1270,75 @@ export function TicketDetail({ ticketId }: { ticketId?: string }) {
             <div className={styles.detailRow}>
               <Calendar className={styles.detailIcon} />
               <div>
-                <div className={styles.detailLabel}>วันที่</div>
-                <div>{displayTravelDate}</div>
+                <div className={styles.detailLabel}>{text.travelDate}</div>
+                <div>{formatLocalizedDate(language, displayTravelDate)}</div>
               </div>
             </div>
 
             <div className={styles.detailRow}>
               <Clock className={styles.detailIcon} />
               <div>
-                <div className={styles.detailLabel}>เวลา</div>
-                <div>{displayTravelTime}</div>
+                <div className={styles.detailLabel}>{text.travelTime}</div>
+                <div>{formatLocalizedTime(language, displayTravelTime)}</div>
               </div>
             </div>
           </div>
         </div>
 
         <div className={styles.contactCard}>
-          <h2 className={styles.sectionTitle}>ข้อมูลผู้จอง</h2>
+          <h2 className={styles.sectionTitle}>{text.contactSection}</h2>
 
           <div className={styles.contactList}>
             <div className={styles.contactRow}>
-              <span className={styles.contactLabel}>ชื่อ</span>
+              <span className={styles.contactLabel}>{text.contactName}</span>
               <span className={styles.contactValue}>{activeBooking.contactName || "-"}</span>
             </div>
             <div className={styles.contactRow}>
-              <span className={styles.contactLabel}>เบอร์โทร</span>
+              <span className={styles.contactLabel}>{text.phone}</span>
               <span className={styles.contactValue}>{activeBooking.contactPhone || "-"}</span>
             </div>
             <div className={styles.contactRow}>
-              <span className={styles.contactLabel}>อีเมล</span>
+              <span className={styles.contactLabel}>{text.email}</span>
               <span className={clsx(styles.contactValue, styles.breakAll)}>{activeBooking.contactEmail || "-"}</span>
             </div>
             <div className={styles.contactRow}>
-              <span className={styles.contactLabel}>วันที่ออกตั๋ว</span>
+              <span className={styles.contactLabel}>{text.issuedDate}</span>
               <span className={styles.contactValue}>{issuedDateLabel}</span>
             </div>
           </div>
 
           <div className={styles.summaryDivider}>
             <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>ยอดชำระ</span>
-              <span className={styles.summaryAmount}>฿{formatCurrency(selectedTicketUnitPrice)}</span>
+              <span className={styles.summaryLabel}>{text.paymentAmount}</span>
+              <span className={styles.summaryAmount}>{formatPriceDisplay(language, selectedTicketUnitPrice)}</span>
             </div>
           </div>
         </div>
 
         <div className={styles.actions}>
           <button
+            type="button"
             onClick={handleDownload}
             className={styles.actionButton}
           >
             <Download className={styles.actionIcon} />
-            <span>ดาวน์โหลด</span>
+            <span>{text.download}</span>
           </button>
           <button
+            type="button"
             onClick={handlePrint}
             className={styles.actionButton}
           >
             <Printer className={styles.actionIcon} />
-            <span>ปริ้น</span>
+            <span>{text.print}</span>
           </button>
           <button
+            type="button"
             onClick={() => void handleShare()}
             className={styles.actionButton}
           >
             <Share2 className={styles.actionIcon} />
-            <span>แชร์</span>
+            <span>{text.share}</span>
           </button>
         </div>
       </div>

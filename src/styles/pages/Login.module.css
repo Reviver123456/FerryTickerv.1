@@ -24,3 +24,20 @@
 .inlineLink { composes: inlineLink from "./AuthBase.module.css"; }
 .iconSm { composes: iconSm from "./AuthBase.module.css"; }
 .textRight { composes: textRight from "./AuthBase.module.css"; }
+
+.headerTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.languageSelector {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .headerTopRow {
+    flex-wrap: wrap;
+  }
+}

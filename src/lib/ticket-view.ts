@@ -1,4 +1,5 @@
 import type { BookingHistoryRecord, BookingState } from "@/lib/app-types";
+import type { AppLanguage } from "@/lib/i18n";
 
 export type TicketTab = "unused" | "used";
 export type BookingStatusTone = "used" | "pending" | "cancelled" | "confirmed";
@@ -7,17 +8,27 @@ export type TicketViewBooking = BookingHistoryRecord & {
   routeId: number;
 };
 
-export function getBookingStatusMeta(record: Pick<BookingHistoryRecord, "status" | "tickets">) {
+export function getBookingStatusMeta(
+  record: Pick<BookingHistoryRecord, "status" | "tickets">,
+  language: AppLanguage = "th",
+) {
   const bookingStatus = record.status.toLowerCase();
   const ticketStatuses = record.tickets.map((ticket) => ticket.status.toLowerCase());
   const hasTickets = record.tickets.length > 0;
   const isUsed =
     ticketStatuses.length > 0 && ticketStatuses.every((status) => /used|validated|scanned|boarded|completed/.test(status));
 
+  const label = {
+    used: language === "zh" ? "已使用" : language === "en" ? "Used" : "ใช้งานแล้ว",
+    pending: language === "zh" ? "待付款" : language === "en" ? "Pending Payment" : "รอชำระเงิน",
+    cancelled: language === "zh" ? "已取消" : language === "en" ? "Cancelled" : "ยกเลิกแล้ว",
+    confirmed: language === "zh" ? "已确认" : language === "en" ? "Confirmed" : "ยืนยันแล้ว",
+  };
+
   if (isUsed || /used|validated|scanned|boarded|completed/.test(bookingStatus)) {
     return {
       tab: "used" as TicketTab,
-      label: "ใช้งานแล้ว",
+      label: label.used,
       badgeTone: "used" as BookingStatusTone,
     };
   }
@@ -25,7 +36,7 @@ export function getBookingStatusMeta(record: Pick<BookingHistoryRecord, "status"
   if (/pending|waiting|draft/.test(bookingStatus) || !hasTickets) {
     return {
       tab: "unused" as TicketTab,
-      label: "รอชำระเงิน",
+      label: label.pending,
       badgeTone: "pending" as BookingStatusTone,
     };
   }
@@ -33,14 +44,14 @@ export function getBookingStatusMeta(record: Pick<BookingHistoryRecord, "status"
   if (/cancel/.test(bookingStatus)) {
     return {
       tab: "unused" as TicketTab,
-      label: "ยกเลิกแล้ว",
+      label: label.cancelled,
       badgeTone: "cancelled" as BookingStatusTone,
     };
   }
 
   return {
     tab: "unused" as TicketTab,
-    label: "ยืนยันแล้ว",
+    label: label.confirmed,
     badgeTone: "confirmed" as BookingStatusTone,
   };
 }
@@ -62,7 +73,7 @@ function createSyntheticBookingRecord(booking: BookingState): BookingHistoryReco
     contactName: booking.contact.fullName,
     contactPhone: booking.contact.phone,
     primaryPassengerName: booking.lastLookup.tickets[0]?.passengerName || booking.passengers[0]?.fullName || "",
-    scheduleDate: booking.lastLookup.tickets[0]?.travelDate || booking.selectedSchedule?.dateLabel || "-",
+    scheduleDate: booking.lastLookup.tickets[0]?.travelDate || booking.selectedSchedule?.dateKey || "-",
     scheduleTime: booking.lastLookup.tickets[0]?.travelTime || booking.selectedSchedule?.timeLabel || "-",
     passengers: booking.lastLookup.tickets.length || booking.passengers.length,
     totalAmount: booking.selectedTickets.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
@@ -94,7 +105,7 @@ function createSyntheticCurrentBookingRecord(booking: BookingState): BookingHist
     contactName: booking.contact.fullName,
     contactPhone: booking.contact.phone,
     primaryPassengerName: lookupTickets[0]?.passengerName || booking.passengers[0]?.fullName || "",
-    scheduleDate: lookupTickets[0]?.travelDate || booking.selectedSchedule?.dateLabel || "-",
+    scheduleDate: lookupTickets[0]?.travelDate || booking.selectedSchedule?.dateKey || "-",
     scheduleTime: lookupTickets[0]?.travelTime || booking.selectedSchedule?.timeLabel || "-",
     passengers:
       lookupTickets.length ||

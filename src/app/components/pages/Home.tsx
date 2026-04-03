@@ -5,10 +5,98 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, ChevronRight, Clock, Users } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
-import { fetchSchedules, formatThaiDate, getTodayDateKey } from "@/lib/ferry";
+import { fetchSchedules, getTodayDateKey } from "@/lib/ferry";
+import {
+  formatLocalizedDate,
+  formatPassengerCount,
+  getLanguageLocale,
+  translateScheduleStatus,
+  type AppLanguage,
+} from "@/lib/i18n";
 import type { ScheduleSummary } from "@/lib/app-types";
 import type Litepicker from "litepicker";
 import styles from "@/styles/pages/Home.module.css";
+
+const HOME_COPY: Record<
+  AppLanguage,
+  {
+    heroTitleTop: string;
+    heroTitleBottom: string;
+    heroDescription: string;
+    travelDate: string;
+    passengers: string;
+    required: string;
+    searchButton: string;
+    fieldHelp: string;
+    viewAll: string;
+    available: string;
+    unavailable: string;
+    seatsLeft: string;
+    insufficientSeats: (count: number) => string;
+    todaySchedules: string;
+    schedulesByDate: (dateLabel: string) => string;
+    noSchedulesToday: string;
+    noSchedulesByDate: (dateLabel: string) => string;
+  }
+> = {
+  th: {
+    heroTitleTop: "จองตั๋วเรือออนไลน์",
+    heroTitleBottom: "ง่าย สะดวก จบในที่เดียว",
+    heroDescription: "ค้นหารอบเรือ เลือกตั๋ว ชำระเงิน และตรวจสอบตั๋วได้จากหน้าเดียวกัน",
+    travelDate: "วันที่เดินทาง",
+    passengers: "จำนวนผู้โดยสาร",
+    required: "จำเป็น",
+    searchButton: "ค้นหารอบเรือ",
+    fieldHelp: "ไปเลือกช่วงเวลาและวันเดินทางต่อในหน้าค้นหารอบเรือ",
+    viewAll: "ดูทั้งหมด",
+    available: "ว่าง",
+    unavailable: "เต็ม",
+    seatsLeft: "เหลือที่นั่ง",
+    insufficientSeats: (count) => `ที่นั่งไม่พอสำหรับ ${count} คน`,
+    todaySchedules: "รอบเรือของวันนี้",
+    schedulesByDate: (dateLabel) => `รอบเรือของวันที่ ${dateLabel}`,
+    noSchedulesToday: "ยังไม่พบรอบเรือของวันนี้ตอนนี้",
+    noSchedulesByDate: (dateLabel) => `ยังไม่พบรอบเรือของวันที่ ${dateLabel} ตอนนี้`,
+  },
+  zh: {
+    heroTitleTop: "在线预订船票",
+    heroTitleBottom: "简单便捷 一站完成",
+    heroDescription: "在同一处完成船班查询、选票、付款与查看票券",
+    travelDate: "出行日期",
+    passengers: "乘客人数",
+    required: "必填",
+    searchButton: "搜索船班",
+    fieldHelp: "下一步可在船班搜索页继续选择日期和时间",
+    viewAll: "查看全部",
+    available: "可预订",
+    unavailable: "已满",
+    seatsLeft: "剩余座位",
+    insufficientSeats: (count) => `该班次座位不足 ${count} 人`,
+    todaySchedules: "今日船班",
+    schedulesByDate: (dateLabel) => `${dateLabel} 的船班`,
+    noSchedulesToday: "目前还没有找到今天的船班",
+    noSchedulesByDate: (dateLabel) => `目前还没有找到 ${dateLabel} 的船班`,
+  },
+  en: {
+    heroTitleTop: "Book Ferry Tickets Online",
+    heroTitleBottom: "Simple, Fast, All in One Place",
+    heroDescription: "Search sailings, choose tickets, pay, and review tickets from one flow",
+    travelDate: "Travel Date",
+    passengers: "Passengers",
+    required: "Required",
+    searchButton: "Search Schedules",
+    fieldHelp: "Continue to the schedule search page to choose time and travel date",
+    viewAll: "View All",
+    available: "Available",
+    unavailable: "Full",
+    seatsLeft: "Seats left",
+    insufficientSeats: (count) => `Not enough seats for ${count} passengers`,
+    todaySchedules: "Today's Sailings",
+    schedulesByDate: (dateLabel) => `Sailings for ${dateLabel}`,
+    noSchedulesToday: "No sailings found for today right now",
+    noSchedulesByDate: (dateLabel) => `No sailings found for ${dateLabel} right now`,
+  },
+};
 
 function getScheduleDepartureTime(schedule: ScheduleSummary, dateKey: string) {
   if (schedule.departureAt) {
@@ -37,7 +125,8 @@ function getScheduleDepartureTime(schedule: ScheduleSummary, dateKey: string) {
 
 export function Home() {
   const navigate = useNavigate();
-  const { authUser, booking, setSelectedSchedule, updateSearch } = useAppContext();
+  const { authUser, booking, language, setSelectedSchedule, updateSearch } = useAppContext();
+  const text = HOME_COPY[language];
   const datePickerWrapRef = useRef<HTMLDivElement | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
   const pickerRef = useRef<Litepicker | null>(null);
@@ -102,7 +191,7 @@ export function Home() {
         element: dateInputRef.current,
         parentEl: datePickerWrapRef.current,
         format: "DD MMMM YYYY",
-        lang: "th-TH",
+        lang: getLanguageLocale(language),
         singleMode: true,
         autoApply: true,
         mobileFriendly: true,
@@ -130,7 +219,7 @@ export function Home() {
       pickerRef.current?.destroy();
       pickerRef.current = null;
     };
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     if (!pickerRef.current || !travelDate) {
@@ -143,7 +232,7 @@ export function Home() {
   const activeTodayDateKey = todayDateKey || getTodayDateKey();
   const activeDateKey = travelDate || activeTodayDateKey;
   const searchedDateKey = displayedDateKey || activeTodayDateKey;
-  const searchedDateLabel = formatThaiDate(searchedDateKey);
+  const searchedDateLabel = formatLocalizedDate(language, searchedDateKey);
   const searchedPassengers = displayedPassengers;
   const isShowingToday = searchedDateKey === activeTodayDateKey;
   const displayedSchedules = useMemo(() => {
@@ -171,11 +260,11 @@ export function Home() {
         <div className={styles.heroInner}>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>
-              จองตั๋วเรือออนไลน์
+              {text.heroTitleTop}
               <br />
-              ง่าย สะดวก จบในที่เดียว
+              {text.heroTitleBottom}
             </h1>
-            <p className={styles.heroDescription}>ค้นหารอบเรือ เลือกตั๋ว ชำระเงิน และตรวจสอบตั๋วได้จากหน้าเดียวกัน</p>
+            <p className={styles.heroDescription}>{text.heroDescription}</p>
           </div>
         </div>
       </div>
@@ -185,8 +274,8 @@ export function Home() {
           <div className={styles.searchFields}>
             <div>
               <label className={styles.fieldLabel}>
-                วันที่เดินทาง
-                <span className={styles.requiredBadge}>จำเป็น</span>
+                {text.travelDate}
+                <span className={styles.requiredBadge}>{text.required}</span>
               </label>
               <div
                 ref={datePickerWrapRef}
@@ -198,7 +287,7 @@ export function Home() {
                   ref={dateInputRef}
                   type="text"
                   readOnly
-                  value={formatThaiDate(activeDateKey)}
+                  value={formatLocalizedDate(language, activeDateKey)}
                   className={styles.dateInput}
                 />
               </div>
@@ -206,20 +295,22 @@ export function Home() {
 
             <div>
               <label className={styles.fieldLabel}>
-                จำนวนผู้โดยสาร
-                <span className={styles.requiredBadge}>จำเป็น</span>
+                {text.passengers}
+                <span className={styles.requiredBadge}>{text.required}</span>
               </label>
               <div className={styles.passengerShell}>
                 <Users className={styles.fieldIcon} />
                 <div className={styles.passengerControls}>
                   <button
+                    type="button"
                     onClick={() => setPassengers(Math.max(1, passengers - 1))}
                     className={styles.counterButton}
                   >
                     −
                   </button>
-                  <span className={styles.counterValue}>{passengers} คน</span>
+                  <span className={styles.counterValue}>{formatPassengerCount(language, passengers)}</span>
                   <button
+                    type="button"
                     onClick={() => setPassengers(Math.min(10, passengers + 1))}
                     className={styles.counterButton}
                   >
@@ -227,10 +318,11 @@ export function Home() {
                   </button>
                 </div>
               </div>
-              <div className={styles.fieldHelp}>ไปเลือกช่วงเวลาและวันเดินทางต่อในหน้าค้นหารอบเรือ</div>
+              <div className={styles.fieldHelp}>{text.fieldHelp}</div>
             </div>
 
             <button
+              type="button"
               onClick={() => {
                 setDisplayedDateKey(activeDateKey);
                 setDisplayedPassengers(passengers);
@@ -241,7 +333,7 @@ export function Home() {
               }}
               className={styles.searchButton}
             >
-              <span>ค้นหารอบเรือ</span>
+              <span>{text.searchButton}</span>
             </button>
           </div>
         </div>
@@ -249,15 +341,16 @@ export function Home() {
 
       <div ref={schedulesSectionRef} className={styles.schedulesSection}>
         <div className={styles.schedulesHeader}>
-          <h2>{isShowingToday ? "รอบเรือของวันนี้" : `รอบเรือของวันที่ ${searchedDateLabel}`}</h2>
+          <h2>{isShowingToday ? text.todaySchedules : text.schedulesByDate(searchedDateLabel)}</h2>
           <button
+            type="button"
             onClick={() => {
               updateSearch({ passengers: searchedPassengers, travelDate: searchedDateKey });
               navigate("/schedules");
             }}
             className={styles.viewAllButton}
           >
-            ดูทั้งหมด
+            {text.viewAll}
             <ChevronRight className={styles.viewAllIcon} />
           </button>
         </div>
@@ -267,7 +360,7 @@ export function Home() {
               displayedSchedules.map((schedule) => {
                 const hasEnoughSeats = schedule.availableSeats >= searchedPassengers;
                 const isAvailable = schedule.availableSeats > 0 && hasEnoughSeats;
-                const statusLabel = isAvailable ? "open" : "close";
+                const statusLabel = isAvailable ? text.available : text.unavailable;
 
                 return (
                   <button
@@ -302,18 +395,20 @@ export function Home() {
                           isAvailable ? styles.scheduleStatusOpen : styles.scheduleStatusClose,
                         )}
                       >
-                        {statusLabel}
+                        {translateScheduleStatus(language, statusLabel)}
                       </span>
                     </div>
-                    <div className={styles.scheduleSeats}>เหลือที่นั่ง {schedule.availableSeats}</div>
-                    {!hasEnoughSeats ? <div className={styles.scheduleWarning}>ที่นั่งไม่พอสำหรับ {searchedPassengers} คน</div> : null}
+                    <div className={styles.scheduleSeats}>
+                      {text.seatsLeft} {schedule.availableSeats}
+                    </div>
+                    {!hasEnoughSeats ? <div className={styles.scheduleWarning}>{text.insufficientSeats(searchedPassengers)}</div> : null}
                   </button>
                 );
               })
             ) : (
               <div className={styles.emptyCard}>
                 <div>
-                  {isShowingToday ? "ยังไม่พบรอบเรือของวันนี้ตอนนี้" : `ยังไม่พบรอบเรือของวันที่ ${searchedDateLabel} ตอนนี้`}
+                  {isShowingToday ? text.noSchedulesToday : text.noSchedulesByDate(searchedDateLabel)}
                 </div>
               </div>
             )}

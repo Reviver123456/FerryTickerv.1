@@ -6,6 +6,7 @@ import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { getTicketQrImageUrl } from "@/lib/ferry";
 import { getBookingStatusMeta, getTicketViewBookings, type BookingStatusTone, type TicketTab } from "@/lib/ticket-view";
+import { formatLocalizedDate, formatLocalizedTime, type AppLanguage } from "@/lib/i18n";
 import { QrCode, Clock, ChevronRight } from "lucide-react";
 import styles from "@/styles/pages/MyTickets.module.css";
 
@@ -36,9 +37,71 @@ function resolveDisplayValue(...values: Array<string | null | undefined>) {
   return "-";
 }
 
+const MY_TICKETS_COPY: Record<
+  AppLanguage,
+  {
+    fallbackPassenger: string;
+    title: string;
+    unusedTab: string;
+    usedTab: string;
+    noTickets: string;
+    notSignedIn: string;
+    emptyUnused: string;
+    emptyUsed: string;
+    emptyGuest: string;
+    bookNow: string;
+    login: string;
+    qrAlt: (reference: string) => string;
+  }
+> = {
+  th: {
+    fallbackPassenger: "ผู้โดยสาร",
+    title: "ตั๋วของฉัน",
+    unusedTab: "ยังไม่ใช้งาน",
+    usedTab: "ใช้งานแล้ว",
+    noTickets: "ยังไม่มีตั๋ว",
+    notSignedIn: "ยังไม่ได้เข้าสู่ระบบ",
+    emptyUnused: "ยังไม่พบตั๋วที่ผูกกับบัญชีนี้",
+    emptyUsed: "ยังไม่พบประวัติการใช้งานของบัญชีนี้",
+    emptyGuest: "เข้าสู่ระบบเพื่อให้ระบบดึงตั๋วที่ซื้อไว้ของบัญชีนี้มาแสดงอัตโนมัติ",
+    bookNow: "จองตั๋วเลย",
+    login: "เข้าสู่ระบบ",
+    qrAlt: (reference) => `QR ของ ${reference}`,
+  },
+  zh: {
+    fallbackPassenger: "乘客",
+    title: "我的票券",
+    unusedTab: "未使用",
+    usedTab: "已使用",
+    noTickets: "还没有票券",
+    notSignedIn: "尚未登录",
+    emptyUnused: "没有找到与此账户关联的票券",
+    emptyUsed: "还没有该账户的使用记录",
+    emptyGuest: "登录后系统会自动显示此账户已购买的票券",
+    bookNow: "立即订票",
+    login: "登录",
+    qrAlt: (reference) => `${reference} 的二维码`,
+  },
+  en: {
+    fallbackPassenger: "Passenger",
+    title: "My Tickets",
+    unusedTab: "Unused",
+    usedTab: "Used",
+    noTickets: "No tickets yet",
+    notSignedIn: "Not signed in",
+    emptyUnused: "No tickets were found for this account",
+    emptyUsed: "No usage history was found for this account",
+    emptyGuest: "Sign in so the app can automatically show tickets purchased with this account",
+    bookNow: "Book Tickets",
+    login: "Log In",
+    qrAlt: (reference) => `QR for ${reference}`,
+  },
+};
+
 export function MyTickets() {
   const navigate = useNavigate();
-  const { authUser, booking, setLastLookup } = useAppContext();
+  const { authUser, booking, language, setLastLookup } = useAppContext();
+  const text = MY_TICKETS_COPY[language];
   const [activeTab, setActiveTab] = useState<TicketTab>("unused");
   const hasResolvedInitialTab = useRef(false);
 
@@ -47,7 +110,7 @@ export function MyTickets() {
     () =>
       bookingCards.flatMap((record) => {
         if (record.tickets.length === 0) {
-          const statusMeta = getBookingStatusMeta(record);
+          const statusMeta = getBookingStatusMeta(record, language);
 
           return [
             {
@@ -58,7 +121,7 @@ export function MyTickets() {
               tickets: record.tickets,
               ticketNo: undefined,
               displayRef: record.bookingNo,
-              displayTitle: resolveDisplayValue(record.primaryPassengerName, "ผู้โดยสาร"),
+              displayTitle: resolveDisplayValue(record.primaryPassengerName, text.fallbackPassenger),
               displayDate: resolveDisplayValue(record.scheduleDate),
               displayTime: resolveDisplayValue(record.scheduleTime),
               qrImageUrl: undefined,
@@ -73,7 +136,7 @@ export function MyTickets() {
           const statusMeta = getBookingStatusMeta({
             status: issuedTicket.status || record.status,
             tickets: [issuedTicket],
-          });
+          }, language);
 
           return {
             key: issuedTicket.ticketNo || `${record.bookingNo}-${index}`,
@@ -83,7 +146,7 @@ export function MyTickets() {
             tickets: record.tickets,
             ticketNo: issuedTicket.ticketNo || undefined,
             displayRef: issuedTicket.ticketNo || record.bookingNo,
-            displayTitle: resolveDisplayValue(issuedTicket.passengerName, record.primaryPassengerName, "ผู้โดยสาร"),
+            displayTitle: resolveDisplayValue(issuedTicket.passengerName, record.primaryPassengerName, text.fallbackPassenger),
             displayDate: resolveDisplayValue(issuedTicket.travelDate, record.scheduleDate),
             displayTime: resolveDisplayValue(issuedTicket.travelTime, record.scheduleTime),
             qrImageUrl: getTicketQrImageUrl(issuedTicket),
@@ -93,7 +156,7 @@ export function MyTickets() {
           };
         });
       }),
-    [bookingCards],
+    [bookingCards, language, text.fallbackPassenger],
   );
   const unusedTickets = useMemo(() => ticketCards.filter((record) => record.tab === "unused"), [ticketCards]);
   const usedTickets = useMemo(() => ticketCards.filter((record) => record.tab === "used"), [ticketCards]);
@@ -130,7 +193,7 @@ export function MyTickets() {
   return (
     <div className={styles.page}>
       <div className={styles.containerMd}>
-        <h1 className={styles.pageTitle}>ตั๋วของฉัน</h1>
+        <h1 className={styles.pageTitle}>{text.title}</h1>
 
         <div className={styles.tabs}>
           <button
@@ -138,14 +201,14 @@ export function MyTickets() {
             onClick={() => setActiveTab("unused")}
             className={clsx(styles.tabButton, activeTab === "unused" && styles.tabButtonActive)}
           >
-            ยังไม่ใช้งาน
+            {text.unusedTab}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("used")}
             className={clsx(styles.tabButton, activeTab === "used" && styles.tabButtonActive)}
           >
-            ใช้งานแล้ว
+            {text.usedTab}
           </button>
         </div>
 
@@ -154,29 +217,31 @@ export function MyTickets() {
             <div className={styles.emptyIconWrap}>
               <QrCode className={styles.emptyIcon} />
             </div>
-            <h3 className={styles.emptyTitle}>{authUser ? "ยังไม่มีตั๋ว" : "ยังไม่ได้เข้าสู่ระบบ"}</h3>
+            <h3 className={styles.emptyTitle}>{authUser ? text.noTickets : text.notSignedIn}</h3>
             <p className={styles.emptyText}>
               {authUser
                 ? activeTab === "unused"
-                  ? "ยังไม่พบตั๋วที่ผูกกับบัญชีนี้"
-                  : "ยังไม่พบประวัติการใช้งานของบัญชีนี้"
-                : "เข้าสู่ระบบเพื่อให้ระบบดึงตั๋วที่ซื้อไว้ของบัญชีนี้มาแสดงอัตโนมัติ"}
+                  ? text.emptyUnused
+                  : text.emptyUsed
+                : text.emptyGuest}
             </p>
             {authUser ? (
               activeTab === "unused" && (
                 <button
+                  type="button"
                   onClick={() => navigate("/")}
                   className={styles.primaryButton}
                 >
-                  จองตั๋วเลย
+                  {text.bookNow}
                 </button>
               )
             ) : (
               <button
+                type="button"
                 onClick={() => navigate("/login?redirect=/my-tickets")}
                 className={styles.primaryButton}
               >
-                เข้าสู่ระบบ
+                {text.login}
               </button>
             )}
           </div>
@@ -204,7 +269,7 @@ export function MyTickets() {
                     {ticket.qrImageUrl ? (
                       <img
                         src={ticket.qrImageUrl}
-                        alt={`QR ของ ${ticket.displayRef}`}
+                        alt={text.qrAlt(ticket.displayRef)}
                         className={styles.qrImage}
                       />
                     ) : (
@@ -217,11 +282,11 @@ export function MyTickets() {
                       <div>
                         <div className={styles.refText}>{ticket.displayRef}</div>
                         <h3 className={styles.cardTitle}>{ticket.displayTitle}</h3>
-                        <div className={styles.cardDate}>{ticket.displayDate}</div>
+                        <div className={styles.cardDate}>{formatLocalizedDate(language, ticket.displayDate)}</div>
                         <div className={styles.timeRow}>
                           <div className={styles.timeRow}>
                             <Clock className={styles.timeIcon} />
-                            {ticket.displayTime}
+                            {formatLocalizedTime(language, ticket.displayTime)}
                           </div>
                         </div>
                       </div>

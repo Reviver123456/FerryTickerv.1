@@ -6,6 +6,14 @@ import { Baby, Check, Crown, LoaderCircle, User } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { createBookingDraft, fetchTicketTypes } from "@/lib/ferry";
+import {
+  formatLocalizedDate,
+  formatPriceDisplay,
+  formatTicketCount,
+  formatPassengerTypeLabel,
+  translateTicketBenefit,
+  type AppLanguage,
+} from "@/lib/i18n";
 import type { TicketTypeOption } from "@/lib/app-types";
 import styles from "@/styles/pages/SelectTicket.module.css";
 
@@ -19,9 +27,87 @@ function getTicketIcon(type: TicketTypeOption) {
   return type.passengerType === "child" ? Baby : User;
 }
 
+const SELECT_TICKET_COPY: Record<
+  AppLanguage,
+  {
+    loadError: string;
+    selectAtLeastOne: string;
+    draftError: string;
+    missingScheduleTitle: string;
+    missingScheduleText: string;
+    backToSchedules: string;
+    title: string;
+    headerMeta: (timeLabel: string, dateLabel: string) => string;
+    loading: string;
+    recommended: string;
+    priceMeta: string;
+    quantity: string;
+    total: (countLabel: string) => string;
+    loadingAction: string;
+    next: string;
+    helper: string;
+  }
+> = {
+  th: {
+    loadError: "ไม่สามารถโหลดประเภทตั๋วได้",
+    selectAtLeastOne: "กรุณาเลือกประเภทตั๋วอย่างน้อย 1 รายการ",
+    draftError: "ไม่สามารถสร้าง booking draft ได้",
+    missingScheduleTitle: "ยังไม่ได้เลือกรอบเรือ",
+    missingScheduleText: "เลือกรอบเรือก่อนเพื่อโหลดประเภทตั๋วและสร้าง booking draft",
+    backToSchedules: "กลับไปเลือกรอบเรือ",
+    title: "เลือกประเภทตั๋ว",
+    headerMeta: (timeLabel, dateLabel) => `รอบ ${timeLabel} • วันที่ ${dateLabel}`,
+    loading: "กำลังโหลดประเภทตั๋ว...",
+    recommended: "แนะนำ",
+    priceMeta: "ต่อคน",
+    quantity: "จำนวน",
+    total: (countLabel) => `ทั้งหมด ${countLabel}`,
+    loadingAction: "กรุณารอสักครู่...",
+    next: "ถัดไป",
+    helper: "จำนวนตั๋วที่เลือกจะถูกใช้สร้างจำนวนฟอร์มผู้โดยสารในขั้นตอนถัดไป",
+  },
+  zh: {
+    loadError: "无法加载票种",
+    selectAtLeastOne: "请至少选择 1 种票券",
+    draftError: "无法创建 booking draft",
+    missingScheduleTitle: "尚未选择船班",
+    missingScheduleText: "请先选择船班，系统才能加载票种并创建 booking draft",
+    backToSchedules: "返回选择船班",
+    title: "选择票种",
+    headerMeta: (timeLabel, dateLabel) => `${dateLabel} • ${timeLabel}`,
+    loading: "正在加载票种...",
+    recommended: "推荐",
+    priceMeta: "每人",
+    quantity: "数量",
+    total: (countLabel) => `共 ${countLabel}`,
+    loadingAction: "请稍候...",
+    next: "下一步",
+    helper: "所选票数会决定下一步要生成的乘客表单数量",
+  },
+  en: {
+    loadError: "We couldn't load the ticket types",
+    selectAtLeastOne: "Please select at least one ticket type",
+    draftError: "We couldn't create the booking draft",
+    missingScheduleTitle: "No sailing selected",
+    missingScheduleText: "Choose a sailing first so the app can load ticket types and create a booking draft",
+    backToSchedules: "Back to Sailings",
+    title: "Choose Ticket Types",
+    headerMeta: (timeLabel, dateLabel) => `${timeLabel} • ${dateLabel}`,
+    loading: "Loading ticket types...",
+    recommended: "Recommended",
+    priceMeta: "per person",
+    quantity: "Quantity",
+    total: (countLabel) => `Total ${countLabel}`,
+    loadingAction: "Please wait...",
+    next: "Next",
+    helper: "The selected ticket count will be used to generate the passenger forms in the next step",
+  },
+};
+
 export function SelectTicket() {
   const navigate = useNavigate();
-  const { authUser, booking, setDraft, setSelectedTickets } = useAppContext();
+  const { authUser, booking, language, setDraft, setSelectedTickets } = useAppContext();
+  const text = SELECT_TICKET_COPY[language];
   const [ticketTypes, setTicketTypes] = useState<TicketTypeOption[]>([]);
   const [ticketCounts, setTicketCounts] = useState<TicketCounts>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +150,7 @@ export function SelectTicket() {
         setTicketCounts(initialCounts);
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : "ไม่สามารถโหลดประเภทตั๋วได้");
+          setError(loadError instanceof Error ? loadError.message : text.loadError);
         }
       } finally {
         if (!ignore) {
@@ -78,7 +164,7 @@ export function SelectTicket() {
     return () => {
       ignore = true;
     };
-  }, [booking.search.passengers, booking.selectedTickets]);
+  }, [booking.search.passengers, booking.selectedTickets, text.loadError]);
 
   const selectedItems = useMemo(() => {
     return ticketTypes
@@ -109,7 +195,7 @@ export function SelectTicket() {
     }
 
     if (selectedItems.length === 0) {
-      setError("กรุณาเลือกประเภทตั๋วอย่างน้อย 1 รายการ");
+      setError(text.selectAtLeastOne);
       return;
     }
 
@@ -133,7 +219,7 @@ export function SelectTicket() {
       setDraft(draft);
       navigate("/passenger-info");
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "ไม่สามารถสร้าง booking draft ได้");
+      setError(submitError instanceof Error ? submitError.message : text.draftError);
     } finally {
       setIsSubmitting(false);
     }
@@ -144,13 +230,14 @@ export function SelectTicket() {
       <div className={styles.page}>
         <div className={styles.containerSm}>
           <div className={styles.emptyCard}>
-            <h1>ยังไม่ได้เลือกรอบเรือ</h1>
-            <p className={styles.emptyText}>เลือกรอบเรือก่อนเพื่อโหลดประเภทตั๋วและสร้าง booking draft</p>
+            <h1>{text.missingScheduleTitle}</h1>
+            <p className={styles.emptyText}>{text.missingScheduleText}</p>
             <button
+              type="button"
               onClick={() => navigate("/schedules")}
               className={styles.primaryButton}
             >
-              กลับไปเลือกรอบเรือ
+              {text.backToSchedules}
             </button>
           </div>
         </div>
@@ -162,9 +249,12 @@ export function SelectTicket() {
     <div className={styles.page}>
       <div className={styles.containerSm}>
         <div className={styles.header}>
-          <h1 className={styles.headerTitle}>เลือกประเภทตั๋ว</h1>
+          <h1 className={styles.headerTitle}>{text.title}</h1>
           <p className={styles.headerMeta}>
-            รอบ {booking.selectedSchedule.timeLabel} • วันที่ {booking.selectedSchedule.dateLabel}
+            {text.headerMeta(
+              booking.selectedSchedule.timeLabel,
+              formatLocalizedDate(language, booking.selectedSchedule.dateKey),
+            )}
           </p>
         </div>
 
@@ -172,13 +262,14 @@ export function SelectTicket() {
 
         {isLoading ? (
           <div className={styles.loadingCard}>
-            กำลังโหลดประเภทตั๋ว...
+            {text.loading}
           </div>
         ) : (
           <div className={styles.list}>
             {ticketTypes.map((type) => {
               const Icon = getTicketIcon(type);
               const count = ticketCounts[type.id] ?? 0;
+              const displayName = formatPassengerTypeLabel(language, type.passengerType, type.name);
 
               return (
                 <div
@@ -195,17 +286,17 @@ export function SelectTicket() {
                     </div>
                     <div className={styles.ticketInfo}>
                       <div className={styles.ticketTitleRow}>
-                        <h3 className={styles.ticketName}>{type.name}</h3>
+                        <h3 className={styles.ticketName}>{displayName}</h3>
                         {type.highlight ? (
                           <span className={styles.highlightBadge}>
-                            แนะนำ
+                            {text.recommended}
                           </span>
                         ) : null}
                       </div>
                     </div>
                     <div className={styles.priceGroup}>
-                      <div className={styles.priceValue}>฿{type.price}</div>
-                      <div className={styles.priceMeta}>ต่อคน</div>
+                      <div className={styles.priceValue}>{formatPriceDisplay(language, type.price)}</div>
+                      <div className={styles.priceMeta}>{text.priceMeta}</div>
                     </div>
                   </div>
 
@@ -217,16 +308,17 @@ export function SelectTicket() {
                           className={styles.benefitChip}
                         >
                           <Check className={styles.benefitIcon} />
-                          {benefit}
+                          {translateTicketBenefit(language, benefit)}
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div className={styles.counterRow}>
-                    <span className={styles.counterLabel}>จำนวน</span>
+                    <span className={styles.counterLabel}>{text.quantity}</span>
                     <div className={styles.counterControls}>
                       <button
+                        type="button"
                         onClick={() => updateTicket(type.id, -1)}
                         className={clsx(styles.counterButton, styles.counterButtonMinus)}
                         disabled={count === 0}
@@ -235,6 +327,7 @@ export function SelectTicket() {
                       </button>
                       <span className={styles.counterValue}>{count}</span>
                       <button
+                        type="button"
                         onClick={() => updateTicket(type.id, 1)}
                         className={clsx(styles.counterButton, styles.counterButtonPlus)}
                       >
@@ -252,10 +345,11 @@ export function SelectTicket() {
           <div className={styles.actionCard}>
             <div className={styles.actionRow}>
               <div>
-                <div className={styles.actionMeta}>ทั้งหมด {totalTickets} ตั๋ว</div>
-                <div className={styles.actionAmount}>฿{totalPrice}</div>
+                <div className={styles.actionMeta}>{text.total(formatTicketCount(language, totalTickets))}</div>
+                <div className={styles.actionAmount}>{formatPriceDisplay(language, totalPrice)}</div>
               </div>
               <button
+                type="button"
                 onClick={handleContinue}
                 disabled={totalTickets === 0 || isSubmitting}
                 className={clsx(styles.actionButton, (totalTickets === 0 || isSubmitting) && styles.actionButtonDisabled)}
@@ -263,14 +357,14 @@ export function SelectTicket() {
                 {isSubmitting ? (
                   <span className={styles.loadingState}>
                     <LoaderCircle className={styles.spinner} />
-                    กรุณารอสักครู่...
+                    {text.loadingAction}
                   </span>
                 ) : (
-                  "ถัดไป"
+                  text.next
                 )}
               </button>
             </div>
-            <div className={styles.fieldHelp}>จำนวนตั๋วที่เลือกจะถูกใช้สร้างจำนวนฟอร์มผู้โดยสารในขั้นตอนถัดไป</div>
+            <div className={styles.fieldHelp}>{text.helper}</div>
           </div>
         </div>
       </div>

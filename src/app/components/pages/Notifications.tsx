@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Bell, Clock3, CreditCard, Inbox } from "lucide-react";
 import { useAppContext } from "@/app/providers/AppProvider";
 import { buildNotifications, type AppNotification } from "@/lib/notifications";
+import { formatLocalizedDate, formatLocalizedTime, type AppLanguage } from "@/lib/i18n";
 import styles from "@/styles/pages/Notifications.module.css";
 
 type NotificationView = AppNotification & {
@@ -39,35 +40,62 @@ function parseDateValue(value: string) {
   return parsed;
 }
 
-function formatTimeLabel(date: Date) {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${hours}:${minutes} น.`;
-}
-
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function getSectionLabel(date: Date) {
+const NOTIFICATIONS_COPY: Record<
+  AppLanguage,
+  {
+    today: string;
+    yesterday: string;
+    deleteAll: string;
+    emptyTitle: string;
+    emptyMessage: string;
+    footer: string;
+  }
+> = {
+  th: {
+    today: "วันนี้",
+    yesterday: "เมื่อวาน",
+    deleteAll: "ลบข้อความทั้งหมด",
+    emptyTitle: "ไม่มีข้อความแจ้งเตือน",
+    emptyMessage: "ข้อความแจ้งเตือนทั้งหมดถูกลบแล้ว รายการใหม่จะปรากฏอีกครั้งเมื่อมีอัปเดตจากการจองหรือการใช้งานบัญชี",
+    footer: "ไม่มีการแจ้งเตือนที่เก่ากว่านี้แล้ว",
+  },
+  zh: {
+    today: "今天",
+    yesterday: "昨天",
+    deleteAll: "删除全部通知",
+    emptyTitle: "没有通知消息",
+    emptyMessage: "所有通知都已被删除。当预订或账户有新动态时，这里会再次显示新消息。",
+    footer: "没有更早的通知了",
+  },
+  en: {
+    today: "Today",
+    yesterday: "Yesterday",
+    deleteAll: "Delete All Messages",
+    emptyTitle: "No notifications",
+    emptyMessage: "All notifications have been removed. New items will appear here again when there are booking or account updates.",
+    footer: "There are no older notifications",
+  },
+};
+
+function getSectionLabel(language: AppLanguage, date: Date) {
+  const text = NOTIFICATIONS_COPY[language];
   const today = startOfDay(new Date());
   const target = startOfDay(date);
   const diffDays = Math.round((today.getTime() - target.getTime()) / (24 * 60 * 60 * 1000));
 
   if (diffDays === 0) {
-    return "วันนี้";
+    return text.today;
   }
 
   if (diffDays === 1) {
-    return "เมื่อวาน";
+    return text.yesterday;
   }
 
-  return new Intl.DateTimeFormat("th-TH", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return formatLocalizedDate(language, date, "short");
 }
 
 function getNotificationIcon(tone: NotificationView["tone"]) {
@@ -83,7 +111,8 @@ function getNotificationIcon(tone: NotificationView["tone"]) {
 }
 
 export function Notifications() {
-  const { authUser, booking } = useAppContext();
+  const { authUser, booking, language } = useAppContext();
+  const text = NOTIFICATIONS_COPY[language];
   const [readIds, setReadIds] = useState<string[]>([]);
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [hasHydratedStorage, setHasHydratedStorage] = useState(false);
@@ -107,7 +136,7 @@ export function Notifications() {
     window.localStorage.setItem(DELETED_STORAGE_KEY, JSON.stringify(deletedIds));
   }, [deletedIds, hasHydratedStorage, readIds]);
 
-  const baseNotifications = useMemo(() => buildNotifications(authUser, booking), [authUser, booking]);
+  const baseNotifications = useMemo(() => buildNotifications(authUser, booking, language), [authUser, booking, language]);
   const activeNotifications = useMemo(
     () => baseNotifications.filter((notification) => !deletedIds.includes(notification.id)),
     [baseNotifications, deletedIds],
@@ -129,7 +158,7 @@ export function Notifications() {
     const grouped = new Map<string, NotificationView[]>();
 
     notifications.forEach((notification) => {
-      const label = getSectionLabel(notification.createdDate);
+      const label = getSectionLabel(language, notification.createdDate);
       const existing = grouped.get(label);
 
       if (existing) {
@@ -144,7 +173,7 @@ export function Notifications() {
       label,
       items,
     }));
-  }, [notifications]);
+  }, [language, notifications]);
 
   const markAsRead = (id: string) => {
     setReadIds((current) => (current.includes(id) ? current : [...current, id]));
@@ -179,7 +208,7 @@ export function Notifications() {
             className={styles.deleteAllButton}
             disabled={notifications.length === 0}
           >
-            ลบข้อความทั้งหมด
+            {text.deleteAll}
           </button>
         </div>
 
@@ -189,10 +218,8 @@ export function Notifications() {
               <div className={styles.emptyIcon}>
                 <Inbox className={styles.emptyIconSymbol} />
               </div>
-              <h2 className={styles.emptyTitle}>ไม่มีข้อความแจ้งเตือน</h2>
-              <p className={styles.emptyMessage}>
-                ข้อความแจ้งเตือนทั้งหมดถูกลบแล้ว รายการใหม่จะปรากฏอีกครั้งเมื่อมีอัปเดตจากการจองหรือการใช้งานบัญชี
-              </p>
+              <h2 className={styles.emptyTitle}>{text.emptyTitle}</h2>
+              <p className={styles.emptyMessage}>{text.emptyMessage}</p>
             </div>
           </div>
         ) : (
@@ -238,7 +265,7 @@ export function Notifications() {
                               >
                                 {notification.title}
                               </h3>
-                              <span className={styles.itemTime}>{formatTimeLabel(notification.createdDate)}</span>
+                              <span className={styles.itemTime}>{formatLocalizedTime(language, notification.createdDate.toISOString())}</span>
                             </div>
 
                             <p
@@ -273,7 +300,7 @@ export function Notifications() {
           </div>
         )}
 
-        <p className={styles.footerHint}>ไม่มีการแจ้งเตือนที่เก่ากว่านี้แล้ว</p>
+        <p className={styles.footerHint}>{text.footer}</p>
       </div>
     </div>
   );

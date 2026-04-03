@@ -16,12 +16,22 @@ import type {
   TicketLookupResult,
 } from "@/lib/app-types";
 import { createDefaultPassenger, createEmptyContactInfo, fetchMyBookings, getTodayDateKey } from "@/lib/ferry";
+import {
+  APP_LANGUAGE_STORAGE_KEY,
+  DEFAULT_APP_LANGUAGE,
+  getDocumentLanguage,
+  isAppLanguage,
+  resolveBrowserLanguage,
+  type AppLanguage,
+} from "@/lib/i18n";
 
 type AppContextValue = {
   authUser: AuthUser | null;
   booking: BookingState;
   isHydrated: boolean;
+  language: AppLanguage;
   setAuthUser: (user: AuthUser | null) => void;
+  setLanguage: (language: AppLanguage) => void;
   logout: () => void;
   updateSearch: (partial: Partial<SearchCriteria>) => void;
   setSelectedSchedule: (schedule: ScheduleSummary | null) => void;
@@ -80,6 +90,16 @@ function readStorage<T>(key: string) {
   }
 }
 
+function readLanguageStorage() {
+  if (typeof window === "undefined") {
+    return null as AppLanguage | null;
+  }
+
+  const raw = window.localStorage.getItem(APP_LANGUAGE_STORAGE_KEY);
+
+  return isAppLanguage(raw) ? raw : null;
+}
+
 function syncPassengers(existing: PassengerForm[], count: number) {
   if (count <= 0) {
     return [createDefaultPassenger()];
@@ -112,10 +132,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUserState] = useState<AuthUser | null>(null);
   const [booking, setBooking] = useState<BookingState>(() => createDefaultBookingState());
   const [isHydrated, setIsHydrated] = useState(false);
+  const [language, setLanguageState] = useState<AppLanguage>(DEFAULT_APP_LANGUAGE);
 
   useEffect(() => {
     const storedAuth = readStorage<AuthUser>(AUTH_STORAGE_KEY);
     const storedBooking = readStorage<BookingState>(BOOKING_STORAGE_KEY);
+    const storedLanguage = readLanguageStorage() ?? resolveBrowserLanguage(window.navigator.languages);
 
     if (storedAuth) {
       setAuthUserState(storedAuth);
@@ -141,6 +163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
     }
 
+    setLanguageState(storedLanguage);
     setIsHydrated(true);
   }, []);
 
@@ -163,6 +186,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     window.localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(booking));
   }, [booking, isHydrated]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    document.documentElement.lang = getDocumentLanguage(language);
+  }, [language]);
+
+  useEffect(() => {
+    if (!isHydrated || typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(APP_LANGUAGE_STORAGE_KEY, language);
+  }, [isHydrated, language]);
 
   useEffect(() => {
     if (!isHydrated || !authUser) {
@@ -201,6 +240,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       authUser,
       booking,
       isHydrated,
+      language,
       setAuthUser: (user) => {
         setAuthUserState(user);
 
@@ -214,6 +254,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             },
           }));
         }
+      },
+      setLanguage: (nextLanguage) => {
+        setLanguageState(nextLanguage);
       },
       logout: () => {
         setAuthUserState(null);
@@ -310,7 +353,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       },
     }),
-    [authUser, booking, isHydrated],
+    [authUser, booking, isHydrated, language],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -5,9 +5,85 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Clock, Star } from "lucide-react";
 import { useNavigate } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
-import { fetchSchedules, formatThaiDate, getHourFromTimeLabel } from "@/lib/ferry";
+import { fetchSchedules, getHourFromTimeLabel } from "@/lib/ferry";
+import {
+  formatLocalizedDate,
+  formatPassengerCount,
+  formatPriceDisplay,
+  translateScheduleStatus,
+  type AppLanguage,
+} from "@/lib/i18n";
 import type { ScheduleSummary } from "@/lib/app-types";
 import styles from "@/styles/pages/ScheduleResults.module.css";
+
+const SCHEDULE_RESULTS_COPY: Record<
+  AppLanguage,
+  {
+    headerTitle: string;
+    headerMeta: (dateLabel: string, passengers: number) => string;
+    loading: string;
+    loadError: string;
+    emptyTitle: string;
+    emptyText: string;
+    backToSearch: string;
+    recommended: string;
+    priceMeta: string;
+    seatsAvailable: string;
+    insufficientSeats: (count: number) => string;
+    unavailable: string;
+    select: string;
+    full: string;
+  }
+> = {
+  th: {
+    headerTitle: "รอบเรือที่พบ",
+    headerMeta: (dateLabel, passengers) => `วันที่ ${dateLabel} • ผู้โดยสาร ${formatPassengerCount("th", passengers)}`,
+    loading: "กำลังโหลดรอบเรือจาก API...",
+    loadError: "ไม่สามารถโหลดรอบเรือได้",
+    emptyTitle: "ไม่พบรอบเรือที่ตรงเงื่อนไข",
+    emptyText: "ลองเปลี่ยนวันที่หรือช่วงเวลา แล้วค้นหาอีกครั้ง ระบบกำลังใช้ข้อมูลจาก `GET /api/schedules`",
+    backToSearch: "กลับไปค้นหาใหม่",
+    recommended: "แนะนำ",
+    priceMeta: "เริ่มต้นต่อคน",
+    seatsAvailable: "ที่นั่งว่าง",
+    insufficientSeats: (count) => `รอบนี้มีที่นั่งไม่พอสำหรับผู้โดยสาร ${count} คน`,
+    unavailable: "ไม่พร้อมจอง",
+    select: "เลือก",
+    full: "เต็ม",
+  },
+  zh: {
+    headerTitle: "找到的船班",
+    headerMeta: (dateLabel, passengers) => `日期 ${dateLabel} • ${formatPassengerCount("zh", passengers)}`,
+    loading: "正在从 API 加载船班...",
+    loadError: "无法加载船班",
+    emptyTitle: "没有符合条件的船班",
+    emptyText: "请尝试更改日期或时间段后重新搜索，系统目前使用 `GET /api/schedules` 的数据",
+    backToSearch: "返回重新搜索",
+    recommended: "推荐",
+    priceMeta: "每人起",
+    seatsAvailable: "可用座位",
+    insufficientSeats: (count) => `该班次座位不足 ${count} 人`,
+    unavailable: "暂不可订",
+    select: "选择",
+    full: "已满",
+  },
+  en: {
+    headerTitle: "Available Sailings",
+    headerMeta: (dateLabel, passengers) => `Date ${dateLabel} • ${formatPassengerCount("en", passengers)}`,
+    loading: "Loading sailings from the API...",
+    loadError: "We couldn't load the sailings",
+    emptyTitle: "No sailings match your filters",
+    emptyText: "Try changing the date or time window and search again. The page is currently using data from `GET /api/schedules`.",
+    backToSearch: "Back to Search",
+    recommended: "Recommended",
+    priceMeta: "starting per person",
+    seatsAvailable: "Seats available",
+    insufficientSeats: (count) => `This sailing does not have enough seats for ${count} passengers`,
+    unavailable: "Unavailable",
+    select: "Select",
+    full: "Full",
+  },
+};
 
 function parseScheduleDateTime(schedule: ScheduleSummary) {
   const dateMatch = schedule.dateKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -33,7 +109,8 @@ function parseScheduleDateTime(schedule: ScheduleSummary) {
 
 export function ScheduleResults() {
   const navigate = useNavigate();
-  const { authUser, booking, setSelectedSchedule } = useAppContext();
+  const { authUser, booking, language, setSelectedSchedule } = useAppContext();
+  const text = SCHEDULE_RESULTS_COPY[language];
   const [schedules, setSchedules] = useState<ScheduleSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -54,7 +131,7 @@ export function ScheduleResults() {
         }
       } catch (loadError) {
         if (!ignore) {
-          setError(loadError instanceof Error ? loadError.message : "ไม่สามารถโหลดรอบเรือได้");
+          setError(loadError instanceof Error ? loadError.message : text.loadError);
         }
       } finally {
         if (!ignore) {
@@ -129,29 +206,26 @@ export function ScheduleResults() {
     <div className={styles.page}>
       <div className={styles.containerSm}>
         <div className={styles.header}>
-          <h1 className={styles.headerTitle}>รอบเรือที่พบ</h1>
-          <p className={styles.headerMeta}>
-            วันที่ {formatThaiDate(booking.search.travelDate)} • ผู้โดยสาร {booking.search.passengers} คน
-          </p>
+          <h1 className={styles.headerTitle}>{text.headerTitle}</h1>
+          <p className={styles.headerMeta}>{text.headerMeta(formatLocalizedDate(language, booking.search.travelDate), booking.search.passengers)}</p>
         </div>
 
         {error ? <div className={styles.errorBanner}>{error}</div> : null}
 
         {isLoading ? (
           <div className={styles.loadingCard}>
-            กำลังโหลดรอบเรือจาก API...
+            {text.loading}
           </div>
         ) : filteredSchedules.length === 0 ? (
           <div className={styles.emptyCard}>
-            <h2>ไม่พบรอบเรือที่ตรงเงื่อนไข</h2>
-            <p className={styles.emptyCardText}>
-              ลองเปลี่ยนวันที่หรือช่วงเวลา แล้วค้นหาอีกครั้ง ระบบกำลังใช้ข้อมูลจาก `GET /api/schedules`
-            </p>
+            <h2>{text.emptyTitle}</h2>
+            <p className={styles.emptyCardText}>{text.emptyText}</p>
             <button
+              type="button"
               onClick={() => navigate("/")}
               className={styles.backButton}
             >
-              กลับไปค้นหาใหม่
+              {text.backToSearch}
             </button>
           </div>
         ) : (
@@ -162,8 +236,9 @@ export function ScheduleResults() {
               const hasEnoughSeats = schedule.availableSeats >= booking.search.passengers;
               const isAvailable = !isClosed && schedule.availableSeats > 0 && hasEnoughSeats;
               const percentage = schedule.totalSeats ? (schedule.availableSeats / schedule.totalSeats) * 100 : 100;
-              const statusLabel = isAvailable ? schedule.status : "ไม่พร้อมจอง";
-              const buttonLabel = isAvailable ? "เลือก" : "เต็ม";
+              const isAlmostFull = /near|almost|ใกล้เต็ม/i.test(schedule.status);
+              const statusLabel = isAvailable ? translateScheduleStatus(language, schedule.status) : text.unavailable;
+              const buttonLabel = isAvailable ? text.select : text.full;
 
               return (
                 <div
@@ -178,7 +253,7 @@ export function ScheduleResults() {
                   {schedule.recommended && !isClosed ? (
                     <div className={styles.recommendedBadge}>
                       <Star className={styles.recommendedIcon} />
-                      <span>แนะนำ</span>
+                      <span>{text.recommended}</span>
                     </div>
                   ) : null}
 
@@ -187,20 +262,20 @@ export function ScheduleResults() {
                       <Clock className={clsx(styles.timeIcon, isClosed && styles.timeIconClosed)} />
                       <div>
                         <div className={styles.timeValue}>{schedule.timeLabel}</div>
-                        <div className={styles.timeMeta}>{schedule.dateLabel}</div>
+                        <div className={styles.timeMeta}>{formatLocalizedDate(language, schedule.dateKey)}</div>
                       </div>
                     </div>
 
                     <div className={styles.priceGroup}>
-                      <div className={clsx(styles.priceValue, isClosed && styles.priceValueClosed)}>฿{schedule.price}</div>
-                      <div className={styles.priceMeta}>เริ่มต้นต่อคน</div>
+                      <div className={clsx(styles.priceValue, isClosed && styles.priceValueClosed)}>{formatPriceDisplay(language, schedule.price)}</div>
+                      <div className={styles.priceMeta}>{text.priceMeta}</div>
                     </div>
                   </div>
 
                   <div className={styles.body}>
                     <div className={styles.routeName}>{schedule.routeName}</div>
                     <div className={styles.seatRow}>
-                      <span className={styles.seatLabel}>ที่นั่งว่าง</span>
+                      <span className={styles.seatLabel}>{text.seatsAvailable}</span>
                       <span className={styles.seatValue}>
                         {schedule.availableSeats}
                         {schedule.totalSeats ? `/${schedule.totalSeats}` : ""}
@@ -222,7 +297,7 @@ export function ScheduleResults() {
                       />
                     </div>
                     {!hasEnoughSeats ? (
-                      <div className={styles.fieldHelp}>รอบนี้มีที่นั่งไม่พอสำหรับผู้โดยสาร {booking.search.passengers} คน</div>
+                      <div className={styles.fieldHelp}>{text.insufficientSeats(booking.search.passengers)}</div>
                     ) : null}
                   </div>
 
@@ -232,7 +307,7 @@ export function ScheduleResults() {
                         className={clsx(
                           styles.statusBadge,
                           isAvailable
-                            ? schedule.status === "ใกล้เต็ม"
+                            ? isAlmostFull
                               ? styles.statusBadgeWarn
                               : styles.statusBadgeReady
                             : styles.statusBadgeDisabled,
@@ -242,6 +317,7 @@ export function ScheduleResults() {
                       </span>
 
                       <button
+                        type="button"
                         onClick={() => {
                           setSelectedSchedule(schedule);
 

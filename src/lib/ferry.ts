@@ -896,7 +896,7 @@ function normalizeTicketRecord(record: UnknownRecord, fallback: Partial<TicketRe
     bookingNo:
       pickString(record, ["booking_no", "bookingNo"], "") ||
       pickString(bookingRecord, ["booking_no", "bookingNo"], fallback.bookingNo ?? ""),
-    travelDate: normalizeDateValue(travelDateSource) ? formatThaiDate(travelDateSource) : travelDateSource || "-",
+    travelDate: normalizeDateValue(travelDateSource) ? formatDateKey(travelDateSource) : travelDateSource || "-",
     travelTime: formatTimeLabel(travelTimeSource) || fallback.travelTime || "-",
     gateCode: pickString(record, ["gate_code", "gateCode"], fallback.gateCode ?? "") || undefined,
     raw: record,
@@ -908,7 +908,7 @@ function formatDateLabelOrFallback(value?: string, fallback = "-") {
     return fallback;
   }
 
-  return normalizeDateValue(value) ? formatThaiDate(value) : value || fallback;
+  return normalizeDateValue(value) ? formatDateKey(value) : value || fallback;
 }
 
 function normalizeBookingHistoryRecord(

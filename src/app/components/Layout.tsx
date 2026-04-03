@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Bell, FileText, Home, Ship, User } from "lucide-react";
 import { Link, useLocation } from "@/lib/router";
 import { useAppContext } from "@/app/providers/AppProvider";
+import { translate } from "@/lib/i18n";
 import styles from "@/styles/components/Layout.module.css";
 
 type LayoutProps = {
@@ -30,27 +31,36 @@ function isActive(pathname: string, paths: string[]) {
 
 export function Layout({ children }: LayoutProps) {
   const { pathname } = useLocation();
-  const { authUser } = useAppContext();
-  const desktopProfileName = authUser?.fullName?.trim() || authUser?.email || "โปรไฟล์";
+  const { authUser, language } = useAppContext();
+  const desktopProfileName = authUser?.fullName?.trim() || authUser?.email || translate(language, "layout.profileFallback");
   const desktopItems: NavItem[] = [
-    { href: "/", label: "หน้าแรก", paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"] },
-    { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"] },
-    { href: "/notifications", label: "แจ้งเตือน", paths: ["/notifications", "/promotions"] },
-    { href: "/help", label: "ช่วยเหลือ", paths: ["/help"] },
+    {
+      href: "/",
+      label: translate(language, "layout.home"),
+      paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"],
+    },
+    { href: "/my-tickets", label: translate(language, "layout.myTickets"), paths: ["/my-tickets", "/ticket"] },
+    { href: "/notifications", label: translate(language, "layout.notifications"), paths: ["/notifications", "/promotions"] },
+    { href: "/help", label: translate(language, "layout.help"), paths: ["/help"] },
     ...(authUser
       ? []
       : [
-          { href: "/register", label: "สมัครสมาชิก", paths: ["/register"] },
-          { href: "/login", label: "เข้าสู่ระบบ", paths: ["/login"], variant: "button" as const },
+          { href: "/register", label: translate(language, "layout.register"), paths: ["/register"] },
+          { href: "/login", label: translate(language, "layout.login"), paths: ["/login"], variant: "button" as const },
         ]),
   ];
   const mobileItems = [
-    { href: "/", label: "หน้าแรก", paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"], icon: Home },
-    { href: "/my-tickets", label: "ตั๋วของฉัน", paths: ["/my-tickets", "/ticket"], icon: FileText },
-    { href: "/notifications", label: "แจ้งเตือน", paths: ["/notifications", "/promotions"], icon: Bell },
+    {
+      href: "/",
+      label: translate(language, "layout.home"),
+      paths: ["/", "/schedules", "/select-ticket", "/passenger-info", "/summary", "/payment", "/success"],
+      icon: Home,
+    },
+    { href: "/my-tickets", label: translate(language, "layout.myTickets"), paths: ["/my-tickets", "/ticket"], icon: FileText },
+    { href: "/notifications", label: translate(language, "layout.notifications"), paths: ["/notifications", "/promotions"], icon: Bell },
     {
       href: authUser ? "/profile" : "/login",
-      label: authUser ? "โปรไฟล์" : "เข้าสู่ระบบ",
+      label: authUser ? translate(language, "layout.profile") : translate(language, "layout.login"),
       paths: ["/profile", "/login", "/register"],
       icon: User,
     },
