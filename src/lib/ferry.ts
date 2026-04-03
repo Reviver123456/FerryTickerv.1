@@ -7,12 +7,42 @@ import type {
   TicketRecord,
   TicketTypeOption,
 } from "@/lib/app-types";
+import {
+  createRequestCache,
+  MEDIUM_REQUEST_CACHE_TTL_MS,
+  SHORT_REQUEST_CACHE_TTL_MS,
+} from "@/lib/request-cache";
 
 type UnknownRecord = Record<string, unknown>;
 
 const DEFAULT_API_BASE_URL = "";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+const schedulesCache = createRequestCache({
+  namespace: "user-schedules",
+  ttlMs: MEDIUM_REQUEST_CACHE_TTL_MS,
+  persistToSession: true,
+});
+const ticketTypesCache = createRequestCache({
+  namespace: "user-ticket-types",
+  ttlMs: MEDIUM_REQUEST_CACHE_TTL_MS,
+  persistToSession: true,
+});
+const ticketPricePreviewCache = createRequestCache({
+  namespace: "user-ticket-price-preview",
+  ttlMs: MEDIUM_REQUEST_CACHE_TTL_MS,
+  persistToSession: true,
+});
+const bookingsCache = createRequestCache({
+  namespace: "user-bookings",
+  ttlMs: SHORT_REQUEST_CACHE_TTL_MS,
+  persistToSession: true,
+});
+const ticketsByBookingCache = createRequestCache({
+  namespace: "user-tickets-by-booking",
+  ttlMs: SHORT_REQUEST_CACHE_TTL_MS,
+  persistToSession: true,
+});
 
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -20,6 +50,18 @@ function isRecord(value: unknown): value is UnknownRecord {
 
 function uniqueId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function buildCacheKey(scope: string, extras?: Record<string, unknown>) {
+  return JSON.stringify({
+    scope,
+    ...(extras ?? {}),
+  });
+}
+
+function clearBookingCaches() {
+  bookingsCache.clear();
+  ticketsByBookingCache.clear();
 }
 
 function buildRequestHeaders(init?: RequestInit) {
@@ -1230,6 +1272,8 @@ export async function logoutCurrentUser(currentUser?: AuthUser | null) {
     headers: buildAuthHeaders(currentUser),
   });
 
+  clearBookingCaches();
+
   return {
     loggedOut: true,
     raw: response,
@@ -1237,44 +1281,50 @@ export async function logoutCurrentUser(currentUser?: AuthUser | null) {
 }
 
 export async function fetchSchedules() {
-  const response = await apiRequest<unknown>("/api/schedules");
-  return extractArray(response, ["schedules", "items", "rows"]).map(normalizeSchedule);
+  return schedulesCache.getOrCreate(buildCacheKey("all"), async () => {
+    const response = await apiRequest<unknown>("/api/schedules");
+    return extractArray(response, ["schedules", "items", "rows"]).map(normalizeSchedule);
+  });
 }
 
 async function fetchTicketTypePrice(ticketTypeId: string) {
-  const { response, payload } = await rawApiRequest(
-    `/api/prices/preview?ticket_type_id=${encodeURIComponent(ticketTypeId)}`,
-  );
+  return ticketPricePreviewCache.getOrCreate(buildCacheKey("ticket-type", { ticketTypeId }), async () => {
+    const { response, payload } = await rawApiRequest(
+      `/api/prices/preview?ticket_type_id=${encodeURIComponent(ticketTypeId)}`,
+    );
 
-  if (!response.ok) {
-    return 0;
-  }
+    if (!response.ok) {
+      return 0;
+    }
 
-  const priceRecord =
-    findRecord(payload, ["price", "preview"]) ??
-    (isRecord(unwrapPayload(payload)) ? (unwrapPayload(payload) as UnknownRecord) : null);
+    const priceRecord =
+      findRecord(payload, ["price", "preview"]) ??
+      (isRecord(unwrapPayload(payload)) ? (unwrapPayload(payload) as UnknownRecord) : null);
 
-  return pickNumber(priceRecord, ["amount", "standard_price", "price"], 0);
+    return pickNumber(priceRecord, ["amount", "standard_price", "price"], 0);
+  });
 }
 
 export async function fetchTicketTypes() {
-  const response = await apiRequest<unknown>("/api/ticket-types");
-  const ticketTypes = extractArray(response, ["ticket_types", "items", "rows"]).map(normalizeTicketType);
+  return ticketTypesCache.getOrCreate(buildCacheKey("all"), async () => {
+    const response = await apiRequest<unknown>("/api/ticket-types");
+    const ticketTypes = extractArray(response, ["ticket_types", "items", "rows"]).map(normalizeTicketType);
 
-  return Promise.all(
-    ticketTypes.map(async (ticketType) => {
-      if (ticketType.price > 0) {
-        return ticketType;
-      }
+    return Promise.all(
+      ticketTypes.map(async (ticketType) => {
+        if (ticketType.price > 0) {
+          return ticketType;
+        }
 
-      const previewPrice = await fetchTicketTypePrice(ticketType.id);
+        const previewPrice = await fetchTicketTypePrice(ticketType.id);
 
-      return {
-        ...ticketType,
-        price: previewPrice,
-      };
-    }),
-  );
+        return {
+          ...ticketType,
+          price: previewPrice,
+        };
+      }),
+    );
+  });
 }
 
 export async function createBookingDraft(
@@ -1324,37 +1374,46 @@ export async function createBookingDraft(
     raw: response,
   };
 
+  clearBookingCaches();
   return bookingDraft;
 }
 
 export async function fetchMyBookings(currentUser?: Pick<AuthUser, "accessToken" | "email" | "fullName" | "phone"> | null) {
-  const { response, payload } = await rawApiRequest("/api/bookings", {
-    headers: buildAuthHeaders(currentUser),
-  });
+  return bookingsCache.getOrCreate(
+    buildCacheKey("mine", {
+      accessToken: currentUser?.accessToken || "",
+      email: currentUser?.email || "",
+    }),
+    async () => {
+      const { response, payload } = await rawApiRequest("/api/bookings", {
+        headers: buildAuthHeaders(currentUser),
+      });
 
-  if (!response.ok) {
-    if (response.status === 404 || response.status === 405) {
-      return [] as BookingHistoryRecord[];
-    }
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 405) {
+          return [] as BookingHistoryRecord[];
+        }
 
-    throw new Error(extractMessage(payload) ?? `Request failed with status ${response.status}`);
-  }
+        throw new Error(extractMessage(payload) ?? `Request failed with status ${response.status}`);
+      }
 
-  const records = extractBookingHistoryRecords(payload);
+      const records = extractBookingHistoryRecords(payload);
 
-  if (records.length === 0) {
-    return [] as BookingHistoryRecord[];
-  }
+      if (records.length === 0) {
+        return [] as BookingHistoryRecord[];
+      }
 
-  return records
-    .map((record) =>
-      normalizeBookingHistoryRecord(record, {
-        contactEmail: currentUser?.email,
-        contactName: currentUser?.fullName,
-        contactPhone: currentUser?.phone,
-      }),
-    )
-    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+      return records
+        .map((record) =>
+          normalizeBookingHistoryRecord(record, {
+            contactEmail: currentUser?.email,
+            contactName: currentUser?.fullName,
+            contactPhone: currentUser?.phone,
+          }),
+        )
+        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+    },
+  );
 }
 
 export async function updateBookingInfo(
@@ -1367,11 +1426,14 @@ export async function updateBookingInfo(
   },
   currentUser?: AuthUser | null,
 ) {
-  return apiRequest<unknown>(`/api/bookings/${bookingNo}`, {
+  const response = await apiRequest<unknown>(`/api/bookings/${bookingNo}`, {
     method: "PUT",
     body: JSON.stringify(payload),
     headers: buildAuthHeaders(currentUser),
   });
+
+  clearBookingCaches();
+  return response;
 }
 
 export async function createPayment(payload: {
@@ -1388,6 +1450,8 @@ export async function createPayment(payload: {
     (isRecord(unwrapPayload(response)) ? (unwrapPayload(response) as UnknownRecord) : null) ??
     findRecord(response, ["payment"]);
 
+  clearBookingCaches();
+
   return {
     paymentRef: pickString(record, ["payment_ref", "paymentRef", "id"], ""),
     method: payload.payment_method,
@@ -1400,21 +1464,29 @@ export async function createPayment(payload: {
 }
 
 export async function fetchTicketsByBooking(bookingNo: string, contactEmail: string) {
-  const response = await apiRequest<unknown>(
-    `/api/bookings/${encodeURIComponent(bookingNo)}?contact_email=${encodeURIComponent(contactEmail)}`,
-  );
-  const bookingRecord = extractBookingHistoryRecords(response)[0] ?? null;
-  const normalizedBooking = bookingRecord
-    ? normalizeBookingHistoryRecord(bookingRecord, {
-        bookingNo,
-        contactEmail,
-      })
-    : null;
+  return ticketsByBookingCache.getOrCreate(
+    buildCacheKey("booking", {
+      bookingNo,
+      contactEmail,
+    }),
+    async () => {
+      const response = await apiRequest<unknown>(
+        `/api/bookings/${encodeURIComponent(bookingNo)}?contact_email=${encodeURIComponent(contactEmail)}`,
+      );
+      const bookingRecord = extractBookingHistoryRecords(response)[0] ?? null;
+      const normalizedBooking = bookingRecord
+        ? normalizeBookingHistoryRecord(bookingRecord, {
+            bookingNo,
+            contactEmail,
+          })
+        : null;
 
-  return {
-    bookingNo: normalizedBooking?.bookingNo ?? bookingNo,
-    contactEmail: normalizedBooking?.contactEmail || contactEmail,
-    tickets: normalizedBooking?.tickets ?? [],
-    raw: response,
-  };
+      return {
+        bookingNo: normalizedBooking?.bookingNo ?? bookingNo,
+        contactEmail: normalizedBooking?.contactEmail || contactEmail,
+        tickets: normalizedBooking?.tickets ?? [],
+        raw: response,
+      };
+    },
+  );
 }
